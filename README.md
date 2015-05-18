@@ -9,7 +9,7 @@ The library has been developed using `bison 2.4.1`, and it is not compatible
 with newer versions. Patching is required as shown below.
 
 ```shell
-curl https://raw.githubusercontent.com/copies/3d-ice/patch/v2.2.5.patch | git apply
+curl https://raw.githubusercontent.com/copies/3d-ice/patches/v2.2.5.patch | git apply
 ```
 
 [1]: http://esl.epfl.ch/3d-ice
