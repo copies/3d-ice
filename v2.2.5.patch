@@ -1,0 +1,42 @@
+diff --git a/bison/floorplan_parser.y b/bison/floorplan_parser.y
+index 52eca8a..fa0f574 100644
+--- a/bison/floorplan_parser.y
++++ b/bison/floorplan_parser.y
+@@ -42,6 +42,7 @@
+     #include "floorplan_element.h"
+     #include "ic_element.h"
+     #include "powers_queue.h"
++    #include "floorplan.h"
+ }
+ 
+ %union
+diff --git a/bison/stack_description_parser.y b/bison/stack_description_parser.y
+index 45977eb..f89905f 100644
+--- a/bison/stack_description_parser.y
++++ b/bison/stack_description_parser.y
+@@ -44,6 +44,9 @@
+     #include "die.h"
+     #include "stack_element.h"
+     #include "inspection_point.h"
++    #include "analysis.h"
++    #include "output.h"
++    #include "stack_description.h"
+ }
+ 
+ // The YYSTYPE union used to collect the types of tokens and rules
+diff --git a/include/types.h b/include/types.h
+index 0772218..7271fde 100644
+--- a/include/types.h
++++ b/include/types.h
+@@ -50,6 +50,11 @@ extern "C"
+ #include <stdint.h>
+ #include <stdbool.h>
+ 
++#ifndef YY_TYPEDEF_YY_SCANNER_T
++#define YY_TYPEDEF_YY_SCANNER_T
++typedef void* yyscan_t;
++#endif
++
+ /******************************************************************************/
+ 
+     /*! Definition of the primitive type String_t */
