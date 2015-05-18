@@ -1,0 +1,6 @@
+/**/*.o
+/**/*.d
+/bison/*.h
+/bison/*.c
+/flex/*.h
+/flex/*.c
