@@ -1,6 +1,7 @@
-/**/*.o
+/**/*.a
 /**/*.d
-/bison/*.h
+/**/*.o
 /bison/*.c
-/flex/*.h
+/bison/*.h
 /flex/*.c
+/flex/*.h
