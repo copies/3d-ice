@@ -1,0 +1,307 @@
+diff --git a/bison/floorplan_parser.y b/bison/floorplan_parser.y
+index e29c68d..86eae7a 100644
+--- a/bison/floorplan_parser.y
++++ b/bison/floorplan_parser.y
+@@ -43,6 +43,14 @@
+     #include "ic_element.h"
+     #include "powers_queue.h"
+     #include "floorplan.h"
++
++    typedef struct floorplan_context_t {
++        void *scanner ;
++
++        bool local_abort ;
++
++        ICElementList_t ic_element_list ;
++    } floorplan_context_t;
+ }
+ 
+ %union
+@@ -66,13 +74,17 @@
+     void floorplan_parser_error
+ 
+         (Floorplan_t *floorplan, Dimensions_t *dimensions,
+-         yyscan_t yyscanner, const char *msg) ;
++         floorplan_context_t *context, const char *msg) ;
++
++    #define FLPERROR(m) floorplan_parser_error (floorplan, dimensions, context, m)
+ 
+     static char error_message [250] ;
+ 
+-    static bool local_abort ;
++    #define scanner context->scanner
++
++    #define local_abort context->local_abort
+ 
+-    static ICElementList_t ic_element_list ;
++    #define ic_element_list context->ic_element_list
+ }
+ 
+ %type <p_floorplan_element> floorplan_element ;
+@@ -95,13 +107,12 @@
+ %name-prefix "floorplan_parser_"
+ %output      "floorplan_parser.c"
+ 
+-%pure-parser
+-
++%define api.pure full
+ %error-verbose
+ 
+-%parse-param { Floorplan_t  *floorplan  }
+-%parse-param { Dimensions_t *dimensions }
+-%parse-param { void         *scanner    }
++%parse-param { Floorplan_t         *floorplan  }
++%parse-param { Dimensions_t        *dimensions }
++%parse-param { floorplan_context_t *context    }
+ 
+ %lex-param   { void *scanner }
+ 
+@@ -149,7 +160,7 @@ floorplan_element_list
+         {
+             sprintf (error_message, "Floorplan element id %s already declared", $2->Id) ;
+ 
+-            floorplan_parser_error (floorplan, dimensions, scanner, error_message) ;
++            FLPERROR (error_message) ;
+ 
+             local_abort = true ;
+         }
+@@ -178,7 +189,7 @@ floorplan_element
+ 
+             ic_element_list_destroy (&ic_element_list) ;
+ 
+-            floorplan_parser_error (floorplan, dimensions, scanner, "Malloc floorplan element failed") ;
++            FLPERROR ("Malloc floorplan element failed") ;
+ 
+             YYABORT ;
+         }
+@@ -220,7 +231,7 @@ floorplan_element
+                         $1,
+                         icel2->SW_X, icel2->SW_Y, icel2->Length, icel2->Width) ;
+ 
+-                    floorplan_parser_error (floorplan, dimensions, scanner, error_message) ;
++                    FLPERROR (error_message) ;
+ 
+                     local_abort = true ;
+                 }
+@@ -253,7 +264,7 @@ floorplan_element
+                             flpel->Id,
+                             icel3->SW_X, icel3->SW_Y, icel3->Length, icel3->Width) ;
+ 
+-                        floorplan_parser_error (floorplan, dimensions, scanner, error_message) ;
++                        FLPERROR (error_message) ;
+ 
+                         local_abort = true ;
+                     }
+@@ -283,7 +294,7 @@ ic_elements
+         {
+             sprintf (error_message, "Floorplan element is outside of the IC") ;
+ 
+-            floorplan_parser_error (floorplan, dimensions, scanner, error_message) ;
++            FLPERROR (error_message) ;
+ 
+             local_abort = true ;
+         }
+@@ -319,7 +330,7 @@ ic_element
+ 
+         if (icelement == NULL)
+         {
+-            floorplan_parser_error (floorplan, dimensions, scanner, "Malloc ic element failed") ;
++            FLPERROR ("Malloc ic element failed") ;
+ 
+             ic_element_list_destroy (&ic_element_list) ;
+ 
+@@ -337,7 +348,7 @@ ic_element
+         {
+             sprintf (error_message, "Floorplan element is outside of the IC") ;
+ 
+-            floorplan_parser_error (floorplan, dimensions, scanner, error_message) ;
++            FLPERROR (error_message) ;
+ 
+             local_abort = true ;
+         }
+@@ -357,7 +368,7 @@ optional_power_values_list
+ 
+         if (powers_list == NULL)
+         {
+-            floorplan_parser_error (floorplan, dimensions, scanner, "Malloc power list failed") ;
++            FLPERROR ("Malloc power list failed") ;
+ 
+             ic_element_list_destroy (&ic_element_list) ;
+ 
+@@ -383,7 +394,7 @@ power_values_list
+ 
+         if (powers_list == NULL)
+         {
+-            floorplan_parser_error (floorplan, dimensions, scanner, "Malloc power list failed") ;
++            FLPERROR ("Malloc power list failed") ;
+ 
+             ic_element_list_destroy (&ic_element_list) ;
+ 
+@@ -410,14 +421,14 @@ power_values_list
+ 
+ void floorplan_parser_error
+ (
+-    Floorplan_t  *floorplan,
+-    Dimensions_t *__attribute__ ((unused)) dimensions,
+-    yyscan_t      yyscanner,
+-    const char   *msg
++    Floorplan_t         *floorplan,
++    Dimensions_t        *__attribute__ ((unused)) dimensions,
++    floorplan_context_t *context,
++    const char          *msg
+ )
+ {
+     fprintf (stderr, "%s:%d: %s\n",
+-        floorplan->FileName, floorplan_parser_get_lineno(yyscanner), msg) ;
++        floorplan->FileName, floorplan_parser_get_lineno(scanner), msg) ;
+ }
+ 
+ /******************************************************************************/
+diff --git a/bison/stack_description_parser.y b/bison/stack_description_parser.y
+index b69072f..3b673e1 100644
+--- a/bison/stack_description_parser.y
++++ b/bison/stack_description_parser.y
+@@ -47,6 +47,20 @@
+     #include "analysis.h"
+     #include "output.h"
+     #include "stack_description.h"
++
++    typedef struct stack_context_t {
++        void *scanner ;
++
++        CellDimension_t first_wall_length ;
++        CellDimension_t last_wall_length ;
++        CellDimension_t wall_length ;
++        CellDimension_t channel_length ;
++        Quantity_t      num_channels ;
++        Quantity_t      num_dies ;
++
++        Quantity_t  source_layer_offset ;
++        LayerList_t dielayers ;
++    } stack_context_t;
+ }
+ 
+ // The YYSTYPE union used to collect the types of tokens and rules
+@@ -88,21 +102,23 @@
+     void stack_description_error
+ 
+         (StackDescription_t *stack, Analysis_t *analysis, Output_t *output,
+-         yyscan_t scanner, const char *message) ;
++         stack_context_t *context, const char *message) ;
+ 
+-    #define STKERROR(m) stack_description_error (stkd, analysis, output, scanner, m)
++    #define STKERROR(m) stack_description_error (stkd, analysis, output, context, m)
+ 
+     static char error_message [100] ;
+ 
+-    static CellDimension_t first_wall_length ;
+-    static CellDimension_t last_wall_length ;
+-    static CellDimension_t wall_length ;
+-    static CellDimension_t channel_length ;
+-    static Quantity_t      num_channels ;
+-    static Quantity_t      num_dies ;
++    #define scanner context->scanner
++
++    #define first_wall_length context->first_wall_length
++    #define last_wall_length  context->last_wall_length
++    #define wall_length       context->wall_length
++    #define channel_length    context->channel_length
++    #define num_channels      context->num_channels
++    #define num_dies          context->num_dies
+ 
+-    static Quantity_t  source_layer_offset ;
+-    static LayerList_t dielayers ;
++    #define source_layer_offset context->source_layer_offset
++    #define dielayers           context->dielayers
+ }
+ 
+ %type <double_v>           first_wall_length
+@@ -198,13 +214,13 @@
+ %name-prefix "stack_description_"
+ %output      "stack_description_parser.c"
+ 
+-%pure-parser
++%define api.pure full
+ %error-verbose
+ 
+ %parse-param { StackDescription_t *stkd     }
+ %parse-param { Analysis_t         *analysis }
+ %parse-param { Output_t           *output   }
+-%parse-param { void               *scanner  }
++%parse-param { stack_context_t    *context  }
+ 
+ %lex-param   { void *scanner }
+ 
+@@ -1872,7 +1888,7 @@ void stack_description_error
+     StackDescription_t *stkd,
+     Analysis_t         *analysis,
+     Output_t           *output,
+-    yyscan_t            scanner,
++    stack_context_t    *context,
+     const char         *message
+ )
+ {
+diff --git a/sources/floorplan_file_parser.c b/sources/floorplan_file_parser.c
+index f71bf1e..0e228f8 100644
+--- a/sources/floorplan_file_parser.c
++++ b/sources/floorplan_file_parser.c
+@@ -41,15 +41,6 @@
+ #include "../bison/floorplan_parser.h"
+ #include "../flex/floorplan_scanner.h"
+ 
+-//  From Bison manual:
+-//  The value returned by yyparse is 0 if parsing was successful (return is
+-//  due to end-of-input). The value is 1 if parsing failed (return is due to
+-//  a syntax error).
+-
+-extern int floorplan_parser_parse
+-
+-    (Floorplan_t *floorplan, Dimensions_t *dimensions, yyscan_t scanner) ;
+-
+ /******************************************************************************/
+ 
+ Error_t parse_floorplan_file
+@@ -78,7 +69,8 @@ Error_t parse_floorplan_file
+     floorplan_parser_set_in    (input, scanner) ;
+     //floorplan_set_debug (1, scanner) ;
+ 
+-    result = floorplan_parser_parse (floorplan, dimensions, scanner) ;
++    floorplan_context_t context = { .scanner = scanner } ;
++    result = floorplan_parser_parse (floorplan, dimensions, &context) ;
+ 
+     floorplan_parser_lex_destroy (scanner) ;
+     fclose (input) ;
+diff --git a/sources/stack_file_parser.c b/sources/stack_file_parser.c
+index f5d685f..398592c 100644
+--- a/sources/stack_file_parser.c
++++ b/sources/stack_file_parser.c
+@@ -41,19 +41,6 @@
+ #include "../bison/stack_description_parser.h"
+ #include "../flex/stack_description_scanner.h"
+ 
+-// From Bison manual:
+-// The value returned by yyparse is 0 if parsing was successful (return is
+-// due to end-of-input). The value is 1 if parsing failed (return is due to
+-// a syntax error).
+-
+-extern int stack_description_parse
+-(
+-    StackDescription_t *stkd,
+-    Analysis_t         *analysis,
+-    Output_t           *output,
+-    yyscan_t            scanner
+-) ;
+-
+ /******************************************************************************/
+ 
+ Error_t parse_stack_description_file
+@@ -81,7 +68,8 @@ Error_t parse_stack_description_file
+     stack_description_lex_init (&scanner) ;
+     stack_description_set_in (input, scanner) ;
+ 
+-    result = stack_description_parse (stkd, analysis, output, scanner) ;
++    stack_context_t context = { .scanner = scanner } ;
++    result = stack_description_parse (stkd, analysis, output, &context) ;
+ 
+     stack_description_lex_destroy (scanner) ;
+     fclose (input) ;
