@@ -1,14 +1,16 @@
 diff --git a/bison/floorplan_parser.y b/bison/floorplan_parser.y
-index e29c68d..86eae7a 100644
+index e29c68d..067093e 100644
 --- a/bison/floorplan_parser.y
 +++ b/bison/floorplan_parser.y
-@@ -43,6 +43,14 @@
+@@ -43,6 +43,16 @@
      #include "ic_element.h"
      #include "powers_queue.h"
      #include "floorplan.h"
 +
 +    typedef struct floorplan_context_t {
 +        void *scanner ;
++
++        char error_message [250] ;
 +
 +        bool local_abort ;
 +
@@ -17,28 +19,29 @@ index e29c68d..86eae7a 100644
  }
  
  %union
-@@ -66,13 +74,17 @@
+@@ -66,13 +76,17 @@
      void floorplan_parser_error
  
          (Floorplan_t *floorplan, Dimensions_t *dimensions,
 -         yyscan_t yyscanner, const char *msg) ;
 +         floorplan_context_t *context, const char *msg) ;
-+
-+    #define FLPERROR(m) floorplan_parser_error (floorplan, dimensions, context, m)
  
-     static char error_message [250] ;
+-    static char error_message [250] ;
++    #define FLPERROR(m) floorplan_parser_error (floorplan, dimensions, context, m)
  
 -    static bool local_abort ;
 +    #define scanner context->scanner
-+
-+    #define local_abort context->local_abort
  
 -    static ICElementList_t ic_element_list ;
++    #define error_message context->error_message
++
++    #define local_abort context->local_abort
++
 +    #define ic_element_list context->ic_element_list
  }
  
  %type <p_floorplan_element> floorplan_element ;
-@@ -95,13 +107,12 @@
+@@ -95,13 +109,12 @@
  %name-prefix "floorplan_parser_"
  %output      "floorplan_parser.c"
  
@@ -56,7 +59,7 @@ index e29c68d..86eae7a 100644
  
  %lex-param   { void *scanner }
  
-@@ -149,7 +160,7 @@ floorplan_element_list
+@@ -149,7 +162,7 @@ floorplan_element_list
          {
              sprintf (error_message, "Floorplan element id %s already declared", $2->Id) ;
  
@@ -65,7 +68,7 @@ index e29c68d..86eae7a 100644
  
              local_abort = true ;
          }
-@@ -178,7 +189,7 @@ floorplan_element
+@@ -178,7 +191,7 @@ floorplan_element
  
              ic_element_list_destroy (&ic_element_list) ;
  
@@ -74,7 +77,7 @@ index e29c68d..86eae7a 100644
  
              YYABORT ;
          }
-@@ -220,7 +231,7 @@ floorplan_element
+@@ -220,7 +233,7 @@ floorplan_element
                          $1,
                          icel2->SW_X, icel2->SW_Y, icel2->Length, icel2->Width) ;
  
@@ -83,7 +86,7 @@ index e29c68d..86eae7a 100644
  
                      local_abort = true ;
                  }
-@@ -253,7 +264,7 @@ floorplan_element
+@@ -253,7 +266,7 @@ floorplan_element
                              flpel->Id,
                              icel3->SW_X, icel3->SW_Y, icel3->Length, icel3->Width) ;
  
@@ -92,7 +95,7 @@ index e29c68d..86eae7a 100644
  
                          local_abort = true ;
                      }
-@@ -283,7 +294,7 @@ ic_elements
+@@ -283,7 +296,7 @@ ic_elements
          {
              sprintf (error_message, "Floorplan element is outside of the IC") ;
  
@@ -101,7 +104,7 @@ index e29c68d..86eae7a 100644
  
              local_abort = true ;
          }
-@@ -319,7 +330,7 @@ ic_element
+@@ -319,7 +332,7 @@ ic_element
  
          if (icelement == NULL)
          {
@@ -110,7 +113,7 @@ index e29c68d..86eae7a 100644
  
              ic_element_list_destroy (&ic_element_list) ;
  
-@@ -337,7 +348,7 @@ ic_element
+@@ -337,7 +350,7 @@ ic_element
          {
              sprintf (error_message, "Floorplan element is outside of the IC") ;
  
@@ -119,7 +122,7 @@ index e29c68d..86eae7a 100644
  
              local_abort = true ;
          }
-@@ -357,7 +368,7 @@ optional_power_values_list
+@@ -357,7 +370,7 @@ optional_power_values_list
  
          if (powers_list == NULL)
          {
@@ -128,7 +131,7 @@ index e29c68d..86eae7a 100644
  
              ic_element_list_destroy (&ic_element_list) ;
  
-@@ -383,7 +394,7 @@ power_values_list
+@@ -383,7 +396,7 @@ power_values_list
  
          if (powers_list == NULL)
          {
@@ -137,7 +140,7 @@ index e29c68d..86eae7a 100644
  
              ic_element_list_destroy (&ic_element_list) ;
  
-@@ -410,14 +421,14 @@ power_values_list
+@@ -410,14 +423,14 @@ power_values_list
  
  void floorplan_parser_error
  (
@@ -158,16 +161,18 @@ index e29c68d..86eae7a 100644
  
  /******************************************************************************/
 diff --git a/bison/stack_description_parser.y b/bison/stack_description_parser.y
-index b69072f..3b673e1 100644
+index b69072f..558998b 100644
 --- a/bison/stack_description_parser.y
 +++ b/bison/stack_description_parser.y
-@@ -47,6 +47,20 @@
+@@ -47,6 +47,22 @@
      #include "analysis.h"
      #include "output.h"
      #include "stack_description.h"
 +
 +    typedef struct stack_context_t {
 +        void *scanner ;
++
++        char error_message [100] ;
 +
 +        CellDimension_t first_wall_length ;
 +        CellDimension_t last_wall_length ;
@@ -182,17 +187,20 @@ index b69072f..3b673e1 100644
  }
  
  // The YYSTYPE union used to collect the types of tokens and rules
-@@ -88,21 +102,23 @@
+@@ -88,21 +104,23 @@
      void stack_description_error
  
          (StackDescription_t *stack, Analysis_t *analysis, Output_t *output,
 -         yyscan_t scanner, const char *message) ;
 +         stack_context_t *context, const char *message) ;
- 
--    #define STKERROR(m) stack_description_error (stkd, analysis, output, scanner, m)
++
 +    #define STKERROR(m) stack_description_error (stkd, analysis, output, context, m)
  
-     static char error_message [100] ;
+-    #define STKERROR(m) stack_description_error (stkd, analysis, output, scanner, m)
++    #define scanner context->scanner
+ 
+-    static char error_message [100] ;
++    #define error_message context->error_message
  
 -    static CellDimension_t first_wall_length ;
 -    static CellDimension_t last_wall_length ;
@@ -200,8 +208,6 @@ index b69072f..3b673e1 100644
 -    static CellDimension_t channel_length ;
 -    static Quantity_t      num_channels ;
 -    static Quantity_t      num_dies ;
-+    #define scanner context->scanner
-+
 +    #define first_wall_length context->first_wall_length
 +    #define last_wall_length  context->last_wall_length
 +    #define wall_length       context->wall_length
@@ -216,7 +222,7 @@ index b69072f..3b673e1 100644
  }
  
  %type <double_v>           first_wall_length
-@@ -198,13 +214,13 @@
+@@ -198,13 +216,13 @@
  %name-prefix "stack_description_"
  %output      "stack_description_parser.c"
  
@@ -232,7 +238,7 @@ index b69072f..3b673e1 100644
  
  %lex-param   { void *scanner }
  
-@@ -1872,7 +1888,7 @@ void stack_description_error
+@@ -1872,7 +1890,7 @@ void stack_description_error
      StackDescription_t *stkd,
      Analysis_t         *analysis,
      Output_t           *output,
