@@ -1,5 +1,5 @@
 diff --git a/bison/floorplan_parser.y b/bison/floorplan_parser.y
-index 52eca8a..fa0f574 100644
+index 52eca8a..e29c68d 100644
 --- a/bison/floorplan_parser.y
 +++ b/bison/floorplan_parser.y
 @@ -42,6 +42,7 @@
@@ -10,8 +10,20 @@ index 52eca8a..fa0f574 100644
  }
  
  %union
+@@ -100,9 +101,9 @@
+ 
+ %parse-param { Floorplan_t  *floorplan  }
+ %parse-param { Dimensions_t *dimensions }
+-%parse-param { yyscan_t      scanner    }
++%parse-param { void         *scanner    }
+ 
+-%lex-param   { yyscan_t scanner       }
++%lex-param   { void *scanner }
+ 
+ %initial-action
+ {
 diff --git a/bison/stack_description_parser.y b/bison/stack_description_parser.y
-index 45977eb..f89905f 100644
+index 45977eb..b69072f 100644
 --- a/bison/stack_description_parser.y
 +++ b/bison/stack_description_parser.y
 @@ -44,6 +44,9 @@
@@ -24,19 +36,15 @@ index 45977eb..f89905f 100644
  }
  
  // The YYSTYPE union used to collect the types of tokens and rules
-diff --git a/include/types.h b/include/types.h
-index 0772218..7271fde 100644
---- a/include/types.h
-+++ b/include/types.h
-@@ -50,6 +50,11 @@ extern "C"
- #include <stdint.h>
- #include <stdbool.h>
+@@ -201,9 +204,9 @@
+ %parse-param { StackDescription_t *stkd     }
+ %parse-param { Analysis_t         *analysis }
+ %parse-param { Output_t           *output   }
+-%parse-param { yyscan_t            scanner  }
++%parse-param { void               *scanner  }
  
-+#ifndef YY_TYPEDEF_YY_SCANNER_T
-+#define YY_TYPEDEF_YY_SCANNER_T
-+typedef void* yyscan_t;
-+#endif
-+
- /******************************************************************************/
+-%lex-param   { yyscan_t scanner }
++%lex-param   { void *scanner }
  
-     /*! Definition of the primitive type String_t */
+ %initial-action
+ {
