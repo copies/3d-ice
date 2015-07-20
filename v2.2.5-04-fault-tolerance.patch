@@ -1,0 +1,13 @@
+diff --git a/bison/floorplan_parser.y b/bison/floorplan_parser.y
+index 7590387..712a0d9 100644
+--- a/bison/floorplan_parser.y
++++ b/bison/floorplan_parser.y
+@@ -138,8 +138,6 @@ floorplan_file
+ 
+         if (local_abort == true)
+         {
+-            floorplan_free (floorplan) ;
+-
+             YYABORT ;
+         }
+     }
