@@ -1,0 +1,21 @@
+diff --git a/sources/system_matrix.c b/sources/system_matrix.c
+index 0c1ed9c..f00c26f 100644
+--- a/sources/system_matrix.c
++++ b/sources/system_matrix.c
+@@ -201,6 +201,8 @@ Error_t do_factorization (SystemMatrix_t *sysmatrix)
+         return TDICE_FAILURE ;
+     }
+ 
++    GlobalLU_t glu;
++
+     dgstrf
+ 
+         (&sysmatrix->SLU_Options, &sysmatrix->SLUMatrix_A_Permuted,
+@@ -209,6 +211,7 @@ Error_t do_factorization (SystemMatrix_t *sysmatrix)
+          NULL, 0,                /* work and lwork */
+          sysmatrix->SLU_PermutationMatrixC, sysmatrix->SLU_PermutationMatrixR,
+          &sysmatrix->SLUMatrix_L, &sysmatrix->SLUMatrix_U,
++         &glu,
+          &sysmatrix->SLU_Stat, &sysmatrix->SLU_Info) ;
+ 
+     if (sysmatrix->SLU_Info == 0)
