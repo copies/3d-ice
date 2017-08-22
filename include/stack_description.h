@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,10 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 #include "channel.h"
 #include "heat_sink.h"
@@ -79,7 +80,11 @@ extern "C"
 
         /*! Information about the heat dissipation throught the top surface */
 
-        HeatSink_t *HeatSink ;
+        HeatSink_t *TopHeatSink ;
+
+        /*! Information about the heat dissipation throught the bottom surface */
+
+        HeatSink_t *BottomHeatSink ;
 
         /*! Information about the type of channel used in the 3d stack */
 

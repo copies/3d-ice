@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,10 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 #include "dimensions.h"
 #include "ic_element_list.h"
@@ -263,6 +264,27 @@ extern "C"
      */
 
     Temperature_t get_avg_temperature_floorplan_element
+    (
+        FloorplanElement_t *flpel,
+        Dimensions_t       *dimensions,
+        Temperature_t      *temperatures
+    ) ;
+
+
+
+    /*! Returns the gradient temperature of the floorplan element
+     *
+     *  \param flpel        pointer to the floorplan element
+     *  \param dimensions   pointer to the structure storing the dimensions
+     *  \param temperatures pointer to the temperature of the first thermal
+     *                      cell in the layer where \a flpel
+     *                      is placed
+     *
+     *  \return the gradient temperature among the thermal cells on the stack
+     *          layer where \a flpel is placed
+     */
+
+    Temperature_t get_gradient_temperature_floorplan_element
     (
         FloorplanElement_t *flpel,
         Dimensions_t       *dimensions,

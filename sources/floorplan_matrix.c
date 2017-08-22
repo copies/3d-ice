@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,10 +36,10 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/free
+#include <string.h> // For the memory function memcpy
 
 #include "floorplan_matrix.h"
-#include "macros.h"
 
 /******************************************************************************/
 
@@ -51,7 +51,6 @@ void floorplan_matrix_init (FloorplanMatrix_t* flpmatrix)
     flpmatrix->NRows           = (CellIndex_t) 0u ;
     flpmatrix->NColumns        = (CellIndex_t) 0u ;
     flpmatrix->NNz             = (CellIndex_t) 0u ;
-    flpmatrix->SLUMatrix.Store = NULL ;
 }
 
 /******************************************************************************/
@@ -119,12 +118,6 @@ Error_t floorplan_matrix_build
         return TDICE_FAILURE ;
     }
 
-    dCreate_CompCol_Matrix
-
-        (&flpmatrix->SLUMatrix, flpmatrix->NRows, flpmatrix->NColumns, flpmatrix->NNz,
-         flpmatrix->Values, (int*) flpmatrix->RowIndices, (int*) flpmatrix->ColumnPointers,
-         SLU_NC, SLU_D, SLU_GE) ;
-
     return TDICE_SUCCESS ;
 }
 
@@ -143,8 +136,6 @@ void floorplan_matrix_destroy (FloorplanMatrix_t* flpmatrix)
     if (flpmatrix->Values != NULL)
 
         free (flpmatrix->Values) ;
-
-    Destroy_SuperMatrix_Store (&flpmatrix->SLUMatrix) ;
 
     floorplan_matrix_init (flpmatrix) ;
 }
@@ -182,32 +173,35 @@ void floorplan_matrix_fill
         {
             ICElement_t *icel = ic_element_list_data (iceln) ;
 
-            CellDimension_t width = 0u ;
+            CellDimension_t width = 0.0 ;
             CellDimension_t y     = icel->SW_Y ;
 
-            FOR_EVERY_IC_ELEMENT_ROW (row_index, icel)
-            {
-                if (row_index < icel->NE_Row)
+            CellIndex_t row ;
+            CellIndex_t column ;
 
-                    width = get_cell_location_y (dimensions, row_index + 1) - y ;
+            for (row = icel->SW_Row ; row <= icel->NE_Row ; row++)
+            {
+                if (row < icel->NE_Row)
+
+                    width = get_cell_location_y (dimensions, row + 1) - y ;
 
                 else
 
                     width = (icel->SW_Y + icel->Width) - y ;
 
 
-                CellDimension_t length = 0u ;
+                CellDimension_t length = 0.0 ;
                 CellDimension_t x      = icel->SW_X ;
 
-                FOR_EVERY_IC_ELEMENT_COLUMN (column_index, icel)
+                for (column = icel->SW_Column ; column <= icel->NE_Column ; column++)
                 {
                     *r_indices++ = get_cell_offset_in_layer
 
-                                   (dimensions, row_index, column_index) ;
+                                   (dimensions, row, column) ;
 
-                    if (column_index < icel->NE_Column)
+                    if (column < icel->NE_Column)
 
-                        length = get_cell_location_x (dimensions, column_index + 1) - x ;
+                        length = get_cell_location_x (dimensions, column + 1) - x ;
 
                     else
 
@@ -237,7 +231,27 @@ void floorplan_matrix_multiply
     Source_t          *b
 )
 {
-    sp_dgemv((String_t)"N", 1.0, &flpmatrix->SLUMatrix, b, 1, 1.0, x, 1) ;
+    CellIndex_t j, i;
+
+    if (   flpmatrix->NRows    == 0 || flpmatrix->RowIndices     == NULL
+        || flpmatrix->NColumns == 0 || flpmatrix->ColumnPointers == NULL
+        || flpmatrix->NNz      == 0 || flpmatrix->Values         == NULL)
+    {
+        fprintf (stderr, "matrix multiply error: matrix unset\n") ;
+
+        return ;
+    }
+
+    for (j = 0; j < flpmatrix->NColumns; ++j)
+
+    if (b[j] != 0.)
+
+    for (i = flpmatrix->ColumnPointers[j] ;
+         i < flpmatrix->ColumnPointers[j+1] ; ++i)
+
+    x [ flpmatrix->RowIndices [i] ] += b[j] * flpmatrix -> Values [i] ;
+
+    return ;
 }
 
 /******************************************************************************/

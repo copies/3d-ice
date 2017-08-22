@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,8 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
-
 #include "types.h"
+#include "string_t.h"
 
 #include "analysis.h"
 #include "stack_element_list.h"

@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -134,7 +134,9 @@ identifier     [[:alpha:]](\_|[[:alnum:]])*
 "values"              return VALUES ;
 
 {identifier}          {
-                        yylval->identifier = strdup(yytext) ;
+                        string_init      (&yylval->identifier) ;
+                        string_copy_cstr (&yylval->identifier, yytext) ;
+
                         return IDENTIFIER ;
                       }
 

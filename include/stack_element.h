@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,10 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 #include "channel.h"
 #include "heat_sink.h"
@@ -71,7 +72,6 @@ extern "C"
         Layer_t    *Layer ;     /*!< Pointer to a Layer      */
         Die_t      *Die ;       /*!< Pointer to a Die        */
         Channel_t  *Channel ;   /*!< Pointer to the Channel  */
-        HeatSink_t *HeatSink ;  /*!< Pointer to the Heatsink */
     } ;
 
     /*! Definition of the type StackElement_p */
@@ -97,13 +97,21 @@ extern "C"
 
         /*! The type of the stack element (Layer, Die or Channel) */
 
-        StackElementType_t Type ;
+        StackElementType_t SEType ;
 
         /*! Pointer to a data structure representing the type of a StackElement.
          *  This pointer must be casted depending on the value stored in
          *  StackElement::Type */
 
         StackElement_p Pointer ;
+
+        /*!  Pointer to the heat sink to dissipate through the topmost layer */
+
+        HeatSink_t *TopSink ;
+
+        /*!  Pointer to the heat sink to dissipate through the bottommost layer */
+
+        HeatSink_t *BottomSink ;
 
         /*! The number of layers composing the stack element */
 

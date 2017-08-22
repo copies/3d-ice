@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,11 +48,15 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 #include "material.h"
+#include "material_list.h"
+#include "dimensions.h"
+#include "material_element_list.h"
 
 /******************************************************************************/
 
@@ -77,6 +81,14 @@ extern "C"
         /*! The Id given to the layer if declared for stack element */
 
         String_t Id ;
+
+        /*! The name of the file storing a material layout */
+
+        String_t LayoutFileName ;
+
+        /*! The list of the material layout */
+
+        MaterialElementList_t MaterialLayout ;
     } ;
 
     /*! Definition of the type Layer_t */
@@ -185,6 +197,65 @@ extern "C"
      */
 
     void layer_print (Layer_t *layer, FILE *stream, String_t prefix) ;
+
+
+
+    /*! Parses the layout file and fills the MaterialLayout structure
+     *
+     * FIXME is this the right place ? do we need a strucure as floorplan?
+     *
+     * \param layer      the layer structure to fill
+     * \param dimensions pointer to the structure storing the dimensions of the stack
+     * \param materials  the list of materials already known
+     * \param filename   path to the floorplan file to parse
+     *
+     * \return \c TDICE_FAILURE if the file cannot be opened or if the parsing
+     *                  of the floorplan fails
+     * \return \c TDICE_FAILURE otherwise
+     */
+
+    Error_t fill_layout (Layer_t        *layer,
+                         Dimensions_t   *dimensions,
+                         MaterialList_t *materials,
+                         String_t        filename) ;
+
+
+
+    /*! Returns the thermal conductivity of a cell in a given location
+     *
+     * \param layer        the layer structure to query
+     * \param row_index    the index of the row of the thermal cell
+     * \param column_index the index of the column of the thermal cell
+     * \param dimensions   pointer to the structure storing the dimensions
+     *                     of the stack
+     *
+     * \return The thermal conductivity of the cell in location
+     *         (\a row_index, \a column_index )
+     */
+
+    SolidTC_t get_thermal_conductivity (Layer_t      *layer,
+                                        CellIndex_t   row_index,
+                                        CellIndex_t   column_index,
+                                        Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the volumetric heat capacity of a cell in a given location
+     *
+     * \param layer        the layer structure to query
+     * \param row_index    the index of the row of the thermal cell
+     * \param column_index the index of the column of the thermal cell
+     * \param dimensions   pointer to the structure storing the dimensions
+     *                     of the stack
+     *
+     * \return The volumetric heat capacity of the cell in location
+     *         (\a row_index, \a column_index )
+     */
+
+    SolidVHC_t get_volumetric_heat_capacity (Layer_t      *layer,
+                                             CellIndex_t   row_index,
+                                             CellIndex_t   column_index,
+                                             Dimensions_t *dimensions) ;
 
 /******************************************************************************/
 

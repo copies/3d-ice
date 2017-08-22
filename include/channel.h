@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,12 +48,14 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 #include "dimensions.h"
 #include "material.h"
+#include "coolant.h"
 
 /******************************************************************************/
 
@@ -116,39 +118,6 @@ extern "C"
 
 
 /******************************************************************************/
-
-
-
-    /*! Inits the fields of the \a coolant structure with default values
-     *
-     * \param coolant the address of the structure to initalize
-     */
-
-    void coolant_init    (Coolant_t *coolant) ;
-
-
-
-    /*! Copies the structure \a src into \a dst , as an assignement
-     *
-     * The function destroys the content of \a dst and then makes the copy
-     *
-     * \param dst the address of the left term sructure (destination)
-     * \param src the address of the right term structure (source)
-     */
-
-    void coolant_copy    (Coolant_t *dst, Coolant_t *src) ;
-
-
-
-    /*! Destroys the content of the fields of the structure \a coolant
-     *
-     * The function releases any dynamic memory used by the structure and
-     * resets its state calling \a coolant_init .
-     *
-     * \param coolant the address of the structure to destroy
-     */
-
-    void coolant_destroy (Coolant_t *coolant) ;
 
 
 
@@ -317,6 +286,25 @@ extern "C"
      */
 
     Temperature_t get_avg_temperature_channel_outlet
+    (
+        Channel_t     *channel,
+        Dimensions_t  *dimensions,
+        Temperature_t *temperatures
+    ) ;
+
+
+
+    /*! Returns the gradient temperature at the outlet of the channel
+     *
+     *  \param channel       pointer to the channel
+     *  \param dimensions    pointer to the structure storing the dimensions
+     *  \param temperatures  pointer to the temperature of the first thermal
+     *                       cell in the layer where \a channel is placed
+     *
+     *  \return The gradient temperature at the outlet of the channel
+     */
+
+    Temperature_t get_gradient_temperature_channel_outlet
     (
         Channel_t     *channel,
         Dimensions_t  *dimensions,

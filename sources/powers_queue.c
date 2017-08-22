@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,10 +36,9 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/calloc/free
 
 #include "powers_queue.h"
-#include "macros.h"
 
 /******************************************************************************/
 
@@ -178,12 +177,12 @@ void powers_queue_print
 
     while (toprint-- > 1)
     {
-        fprintf (stream, "%.3e, ", pqueue->Memory [index]) ;
+        fprintf (stream, "%.3f, ", pqueue->Memory [index]) ;
 
         index = (index + 1) % pqueue->Capacity ;
     }
 
-    fprintf (stream, "%.3e ", pqueue->Memory [index]) ;
+    fprintf (stream, "%.3f ", pqueue->Memory [index]) ;
 }
 
 /******************************************************************************/

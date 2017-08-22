@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,9 +36,9 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/free
+#include <string.h> // For the memory function memcpy
 
-#include "macros.h"
 #include "floorplan.h"
 #include "floorplan_file_parser.h"
 
@@ -46,7 +46,8 @@
 
 void floorplan_init (Floorplan_t *floorplan)
 {
-    floorplan->FileName     = NULL ;
+    string_init (&floorplan->FileName) ;
+
     floorplan->NElements    = (Quantity_t) 0u ;
     floorplan->Bpowers      = NULL ;
 
@@ -60,7 +61,7 @@ void floorplan_copy (Floorplan_t *dst, Floorplan_t *src)
 {
     floorplan_destroy (dst) ;
 
-    dst->FileName = (src->FileName == NULL) ? NULL : strdup (src->FileName) ;
+    string_copy (&dst->FileName, &src->FileName) ;
 
     dst->NElements = src->NElements ;
 
@@ -91,9 +92,7 @@ void floorplan_copy (Floorplan_t *dst, Floorplan_t *src)
 
 void floorplan_destroy (Floorplan_t *floorplan)
 {
-    if (floorplan->FileName != NULL)
-
-        free (floorplan->FileName) ;
+    string_destroy (&floorplan->FileName) ;
 
     if (floorplan->Bpowers != NULL)
 
@@ -252,9 +251,15 @@ FloorplanElement_t *get_floorplan_element
 
     floorplan_element_init (&flpel) ;
 
-    flpel.Id = floorplan_element_id ;
+    string_copy (&flpel.Id, &floorplan_element_id) ;
 
-    return floorplan_element_list_find (&floorplan->ElementsList, &flpel) ;
+    FloorplanElement_t *tmp =
+
+        floorplan_element_list_find (&floorplan->ElementsList, &flpel) ;
+
+    floorplan_element_destroy (&flpel) ;
+
+    return tmp ;
 }
 
 /******************************************************************************/
@@ -266,8 +271,8 @@ Error_t fill_sources_floorplan (Floorplan_t *floorplan, Source_t *sources)
     FloorplanElementListNode_t *flpeln ;
 
     for (flpeln  = floorplan_element_list_begin (&floorplan->ElementsList) ;
-            flpeln != NULL ;
-            flpeln  = floorplan_element_list_next (flpeln))
+         flpeln != NULL ;
+         flpeln  = floorplan_element_list_next (flpeln))
     {
         FloorplanElement_t *flpel = floorplan_element_list_data (flpeln) ;
 
@@ -434,6 +439,46 @@ Temperature_t *get_all_avg_temperatures_floorplan
     }
 
     return avg_temperatures ;
+}
+
+/******************************************************************************/
+
+Temperature_t *get_all_gradient_temperatures_floorplan
+(
+    Floorplan_t   *floorplan,
+    Dimensions_t  *dimensions,
+    Temperature_t *temperatures,
+    Quantity_t    *n_floorplan_elements,
+    Temperature_t *gradient_temperatures
+)
+{
+    if (gradient_temperatures == NULL)
+    {
+        *n_floorplan_elements =
+
+            get_number_of_floorplan_elements_floorplan (floorplan) ;
+
+        gradient_temperatures =
+
+            (Temperature_t *) malloc (sizeof (Temperature_t) * *n_floorplan_elements) ;
+    }
+
+    Temperature_t *tmp = gradient_temperatures ;
+
+    FloorplanElementListNode_t *flpeln ;
+
+    for (flpeln  = floorplan_element_list_begin (&floorplan->ElementsList) ;
+         flpeln != NULL ;
+         flpeln  = floorplan_element_list_next (flpeln))
+    {
+        FloorplanElement_t *flpel = floorplan_element_list_data (flpeln) ;
+
+        *tmp++ = get_gradient_temperature_floorplan_element
+
+                     (flpel, dimensions, temperatures) ;
+    }
+
+    return gradient_temperatures ;
 }
 
 /******************************************************************************/

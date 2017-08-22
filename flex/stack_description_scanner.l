@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -129,8 +129,6 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 
 "2rm"                        return _2RM ;
 "4rm"                        return _4RM ;
-"ambient"                    return AMBIENT ;
-"area"                       return AREA ;
 "average"                    return AVERAGE ;
 "bottom"                     return BOTTOM ;
 "capacity"                   return CAPACITY ;
@@ -139,7 +137,6 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 "chip"                       return CHIP ;
 "coefficient"                return COEFFICIENT ;
 "conductivity"               return CONDUCTIVITY ;
-"connection"                 return CONNECTION ;
 "coolant"                    return COOLANT ;
 "darcy"                      return DARCY ;
 "diameter"                   return DIAMETER ;
@@ -150,6 +147,7 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 "first"                      return FIRST ;
 "floorplan"                  return FLOORPLAN ;
 "flow"                       return FLOW ;
+"gradient"                   return GRADIENT ;
 "heat"                       return HEAT ;
 "height"                     return HEIGHT ;
 "incoming"                   return INCOMING ;
@@ -157,6 +155,7 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 "inline"                     return INLINE ;
 "last"                       return LAST ;
 "layer"                      return LAYER ;
+"layout"                     return LAYOUT ;
 "length"                     return LENGTH ;
 "material"                   return MATERIAL ;
 "maximum"                    return MAXIMUM ;
@@ -173,7 +172,6 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 "slot"                       return SLOT ;
 "solver"                     return SOLVER ;
 "source"                     return SOURCE ;
-"spreader"                   return SPREADER ;
 "stack"                      return STACK ;
 "staggered"                  return STAGGERED ;
 "state"                      return STATE ;
@@ -201,7 +199,9 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
                    }
 
 {identifier}       {
-                     yylval->string = strdup(yytext) ;
+                     string_init      (&yylval->string) ;
+                     string_copy_cstr (&yylval->string, yytext) ;
+
                      return IDENTIFIER ;
                    }
 
@@ -213,19 +213,24 @@ path                    \"{path_begin}{identifier}(\/|\.{1,2}|{identifier})*\"
 
                      // but we add one place for ‘\0’ when allocating
 
-                     yylval->string =
+                     char *newstring =
 
-                         (String_t) malloc (sizeof(*yylval->string) * (n + 1)) ;
+                         (char *) malloc (sizeof(*yylval->string) * (n + 1)) ;
 
                      // we copy from the character after the first "
 
-                     strncpy (yylval->string,
+                     strncpy (newstring,
                               yytext + (1 * sizeof (*yylval->string)),
                               n * sizeof(*yylval->string)) ;
 
                      // We finally add the ‘\0’ at the and of the string
 
-                     yylval->string [n] = '\0' ;
+                     newstring [n] = '\0' ;
+
+                     string_init      (&yylval->string) ;
+                     string_copy_cstr (&yylval->string, newstring) ;
+
+                     free (newstring) ;
 
                      return PATH ;
                    }

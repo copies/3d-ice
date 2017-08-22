@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,10 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
+#include "string_t.h"
 
 /******************************************************************************/
 
@@ -434,16 +435,80 @@ extern "C"
      *  \param dimensions    the address of the dimensions structure
      *  \param num_channels  number of channels (as stack element) in the stack
      *  \param channel_model the model of the channel used in the stack
-     *  \param sink_model    the model of the heat sink used in the stack
      */
 
     void compute_number_of_connections
     (
         Dimensions_t   *dimensions,
         Quantity_t      num_channels,
-        ChannelModel_t  channel_model,
-        HeatSinkModel_t sink_model
+        ChannelModel_t  channel_model
     ) ;
+
+
+
+    /*! Returns the index of the first row of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the first row in a layer
+     */
+
+    CellIndex_t first_row (Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the index of the last row of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the last row in a layer
+     */
+
+    CellIndex_t last_row (Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the index of the first column of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the first column in a layer
+     */
+
+    CellIndex_t first_column (Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the index of the last column of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the last column in a layer
+     */
+
+    CellIndex_t last_column (Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the index of the first layer of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the first layer in a layer
+     */
+
+    CellIndex_t first_layer (Dimensions_t *dimensions) ;
+
+
+
+    /*! Returns the index of the last layer of thermal cells in a layer
+     *
+     * \param dimensions   the address of the dimension structure
+     *
+     * \return The index of the last layer in a layer
+     */
+
+    CellIndex_t last_layer (Dimensions_t *dimensions) ;
 
 
 

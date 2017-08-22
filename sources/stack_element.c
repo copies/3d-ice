@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,22 +36,24 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "stack_element.h"
-#include "macros.h"
 
 /******************************************************************************/
 
 void stack_element_init (StackElement_t *stkel)
 {
-    stkel->Type             = (StackElementType_t) TDICE_STACK_ELEMENT_NONE ;
+    stkel->SEType           = (StackElementType_t) TDICE_STACK_ELEMENT_NONE ;
     stkel->Pointer.Layer    = NULL ;
     stkel->Pointer.Die      = NULL ;
     stkel->Pointer.Channel  = NULL ;
-    stkel->Pointer.HeatSink = NULL ;
-    stkel->Id               = NULL ;
+
+    stkel->TopSink    = NULL ;
+    stkel->BottomSink = NULL ;
+
+    string_init (&stkel->Id) ;
+
     stkel->NLayers          = (CellIndex_t) 0u ;
     stkel->Offset           = (CellIndex_t) 0u ;
 }
@@ -62,42 +64,46 @@ void stack_element_copy (StackElement_t *dst, StackElement_t *src)
 {
     stack_element_destroy (dst) ;
 
-    dst->Type     = src->Type ;
+    dst->SEType   = src->SEType ;
     dst->NLayers  = src->NLayers ;
     dst->Offset   = src->Offset ;
 
-    dst->Id = src->Id == NULL ? NULL : strdup (src->Id) ;
+    string_copy (&dst->Id, &src->Id) ;
 
-    if (src->Type == TDICE_STACK_ELEMENT_LAYER)
+    if (src->SEType == TDICE_STACK_ELEMENT_LAYER)
 
         dst->Pointer.Layer = layer_clone (src->Pointer.Layer) ;
 
-    else if (src->Type == TDICE_STACK_ELEMENT_DIE)
+    else if (src->SEType == TDICE_STACK_ELEMENT_DIE)
 
         dst->Pointer.Die = die_clone (src->Pointer.Die) ;
 
     else
 
-        // Channel or HeatSink
+        // Channel
 
         dst->Pointer = src->Pointer ;
+
+   if (src->TopSink    != NULL) dst->TopSink    = heat_sink_clone (src->TopSink) ;
+   if (src->BottomSink != NULL) dst->BottomSink = heat_sink_clone (src->BottomSink) ;
 }
 
 /******************************************************************************/
 
 void stack_element_destroy (StackElement_t *stkel)
 {
-    if (stkel->Id != NULL)
+    string_destroy (&stkel->Id) ;
 
-        free (stkel->Id) ;
-
-    if (stkel->Type == TDICE_STACK_ELEMENT_DIE)
+    if (stkel->SEType == TDICE_STACK_ELEMENT_DIE)
 
         die_free (stkel->Pointer.Die) ;
 
-    else if (stkel->Type == TDICE_STACK_ELEMENT_LAYER)
+    else if (stkel->SEType == TDICE_STACK_ELEMENT_LAYER)
 
         layer_free (stkel->Pointer.Layer) ;
+
+    if (stkel->TopSink != NULL)     heat_sink_free (stkel->TopSink) ;
+    if (stkel->BottomSink != NULL)  heat_sink_free (stkel->BottomSink) ;
 
     stack_element_init (stkel) ;
 }
@@ -149,7 +155,7 @@ void stack_element_free (StackElement_t *stkel)
 
 bool stack_element_same_id (StackElement_t *stkel, StackElement_t *other)
 {
-    return strcmp (stkel->Id, other->Id) == 0 ? true : false ;
+    return string_equal (&stkel->Id, &other->Id) ;
 }
 
 /******************************************************************************/
@@ -161,7 +167,7 @@ void stack_element_print
     String_t        prefix
 )
 {
-    switch (stkel->Type)
+    switch (stkel->SEType)
     {
         case TDICE_STACK_ELEMENT_CHANNEL :
 
@@ -190,10 +196,6 @@ void stack_element_print
 
             break ;
 
-        case TDICE_STACK_ELEMENT_HEATSINK :
-
-            break ;
-
         case TDICE_STACK_ELEMENT_NONE :
 
             fprintf (stderr, "Warning: found stack element type none\n") ;
@@ -201,7 +203,7 @@ void stack_element_print
 
         default :
 
-            fprintf (stderr, "Undefined stack element type %d\n", stkel->Type) ;
+            fprintf (stderr, "Undefined stack element type %d\n", stkel->SEType) ;
     }
 }
 
@@ -211,11 +213,11 @@ CellIndex_t get_source_layer_offset (StackElement_t *stkel)
 {
     CellIndex_t layer_offset = stkel->Offset ;
 
-    if (stkel->Type == TDICE_STACK_ELEMENT_DIE)
+    if (stkel->SEType == TDICE_STACK_ELEMENT_DIE)
 
         layer_offset += stkel->Pointer.Die->SourceLayerOffset ;
 
-    else if (stkel->Type == TDICE_STACK_ELEMENT_CHANNEL)
+    else if (stkel->SEType == TDICE_STACK_ELEMENT_CHANNEL)
 
         layer_offset += stkel->Pointer.Channel->SourceLayerOffset ;
 
@@ -234,13 +236,18 @@ void stack_element_print_thermal_map
 {
     temperatures += get_cell_offset_in_stack
 
-        (dimensions, get_source_layer_offset (stkel), 0, 0) ;
+        (dimensions, get_source_layer_offset (stkel),
+         first_row (dimensions), first_column (dimensions)) ;
 
-    FOR_EVERY_ROW (row_index, dimensions)
+
+    CellIndex_t row ;
+    CellIndex_t column ;
+
+    for (row = first_row (dimensions) ; row <= last_row (dimensions) ; row++)
     {
-        FOR_EVERY_COLUMN (column_index, dimensions)
+        for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
         {
-            fprintf (stream, "%7.3e  ", *temperatures++) ;
+            fprintf (stream, "%7.3f  ", *temperatures++) ;
         }
 
         fprintf (stream, "\n") ;
@@ -259,13 +266,17 @@ void stack_element_print_power_map
 {
     sources += get_cell_offset_in_stack
 
-        (dimensions, get_source_layer_offset (stkel), 0, 0) ;
+        (dimensions, get_source_layer_offset (stkel),
+         first_row (dimensions), first_column (dimensions)) ;
 
-    FOR_EVERY_ROW (row_index, dimensions)
+    CellIndex_t row ;
+    CellIndex_t column ;
+
+    for (row = first_row (dimensions) ; row <= last_row (dimensions) ; row++)
     {
-        FOR_EVERY_COLUMN (column_index, dimensions)
+        for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
         {
-            fprintf (stream, "%7.3e  ", *sources++) ;
+            fprintf (stream, "%7.3f  ", *sources++) ;
         }
 
         fprintf (stream, "\n") ;
@@ -279,7 +290,7 @@ Quantity_t get_number_of_floorplan_elements_stack_element
     StackElement_t *stkel
 )
 {
-    if (stkel->Type == TDICE_STACK_ELEMENT_DIE)
+    if (stkel->SEType == TDICE_STACK_ELEMENT_DIE)
 
         return get_number_of_floorplan_elements_floorplan
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,9 +48,8 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
-
 #include "types.h"
+#include "string_t.h"
 
 #include "dimensions.h"
 #include "thermal_grid.h"
@@ -159,7 +158,7 @@ extern "C"
     /*! Allocates memory to store indexes and coefficients of a SystemMatrix
      *
      * \param sysmatrix the address of the system matrix
-     * \param size the dimension of the matrix
+     * \param size the dimension of the (square) matrix
      * \param nnz  the number of nonzeroes coeffcients
      *
      * \return \c TDICE_SUCCESS if the memory allocation succeded

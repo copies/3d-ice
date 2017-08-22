@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,11 +36,9 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "analysis.h"
-#include "macros.h"
 
 /******************************************************************************/
 
@@ -132,10 +130,10 @@ void analysis_print (Analysis_t *analysis, FILE *stream, String_t prefix)
 
     else
 
-        fprintf (stream, "  transient step %.3e, slot %.3e ;\n",
+        fprintf (stream, "  transient step %.2f, slot %.2f ;\n",
             analysis->StepTime, analysis->SlotTime) ;
 
-    fprintf (stream, "%s  initial temperature  %.3e ;\n",
+    fprintf (stream, "%s  initial temperature  %.2f ;\n",
         prefix, analysis->InitialTemperature) ;
 
     fprintf (stream, "%s\n", prefix) ;

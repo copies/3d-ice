@@ -1,5 +1,5 @@
  ##############################################################################
- # This file is part of 3D-ICE, version 2.2.5 .                               #
+ # This file is part of 3D-ICE, version 2.2.4 .                               #
  #                                                                            #
  # 3D-ICE is free software: you can  redistribute it and/or  modify it  under #
  # the terms of the  GNU General  Public  License as  published by  the  Free #
@@ -58,6 +58,10 @@ test: lib bin
 
 doc:
 	cd $(3DICE_DOC) ; make doc ;
+
+LDFLAGS = -Wl,-rpath,$(SYSTEMC_LIB)
+3D-ICE-SystemC-Client: 3D-ICE-SystemC-Client.o $(3DICE_LIB_A)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(SLU_LIBS) $(SYSTEMC_LIBS)
 
 clean:
 	cd $(3DICE_FLEX)    ; make clean ;

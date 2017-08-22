@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,9 +36,9 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <string.h>
+#include <stdlib.h> // For the memory function calloc
+#include <string.h> // For the memory function memcpy
 
-#include "macros.h"
 #include "network_message.h"
 
 /******************************************************************************/
@@ -51,9 +51,9 @@ void network_message_init (NetworkMessage_t *message)
 
     message->Length    = message->Memory ;
 
-    message->Type      = message->Length + 1u ;
+    message->MType     = message->Length + 1u ;
 
-    message->Content   = message->Type   + 1u ;
+    message->Content   = message->MType  + 1u ;
 }
 
 /******************************************************************************/
@@ -67,7 +67,7 @@ void network_message_destroy (NetworkMessage_t *message)
     message->Memory    = NULL ;
     message->MaxLength = 0 ;
     message->Length    = NULL ;
-    message->Type      = NULL ;
+    message->MType     = NULL ;
     message->Content   = NULL ;
 }
 
@@ -84,8 +84,8 @@ void increase_message_memory (NetworkMessage_t *message, Quantity_t new_size)
     message->Memory    = tmp ;
     message->MaxLength = new_size ;
     message->Length    = message->Memory ;
-    message->Type      = message->Length + 1u ;
-    message->Content   = message->Type   + 1u ;
+    message->MType     = message->Length + 1u ;
+    message->Content   = message->MType  + 1u ;
 }
 
 /******************************************************************************/
@@ -94,7 +94,7 @@ void build_message_head (NetworkMessage_t *message, MessageType_t type)
 {
     *message->Length = (MessageWord_t) 2u ;
 
-    *message->Type   = (MessageWord_t) type ;
+    *message->MType  = (MessageWord_t) type ;
 }
 
 /******************************************************************************/

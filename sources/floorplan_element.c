@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,8 +36,7 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <string.h>
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "floorplan_element.h"
 #include "macros.h"
@@ -46,7 +45,8 @@
 
 void floorplan_element_init (FloorplanElement_t *flpel)
 {
-    flpel->Id             = NULL ;
+    string_init (&flpel->Id) ;
+
     flpel->NICElements    = (Quantity_t) 0u ;
 
     ic_element_list_init (&flpel->ICElements) ;
@@ -65,7 +65,7 @@ void floorplan_element_copy
 {
     floorplan_element_destroy (dst) ;
 
-    dst->Id = (src->Id == NULL) ? NULL : strdup (src->Id) ;
+    string_copy (&dst->Id, &src->Id) ;
 
     dst->NICElements = src->NICElements ;
     dst->Area        = src->Area ;
@@ -79,9 +79,7 @@ void floorplan_element_copy
 
 void floorplan_element_destroy (FloorplanElement_t *flpel)
 {
-    if (flpel->Id != NULL)
-
-        free (flpel->Id) ;
+    string_destroy (&flpel->Id) ;
 
     ic_element_list_destroy (&flpel->ICElements) ;
 
@@ -143,7 +141,7 @@ bool floorplan_element_same_id
     FloorplanElement_t *other
 )
 {
-    return strcmp (flpel->Id, other->Id) == 0 ? true : false ;
+    return string_equal (&flpel->Id, &other->Id) ;
 }
 
 /******************************************************************************/
@@ -289,6 +287,47 @@ Temperature_t get_avg_temperature_floorplan_element
     }
 
     return avg / (Temperature_t) flpel->NICElements ;
+}
+
+/******************************************************************************/
+
+Temperature_t get_gradient_temperature_floorplan_element
+(
+    FloorplanElement_t *flpel,
+    Dimensions_t       *dimensions,
+    Temperature_t      *temperatures
+)
+{
+    Temperature_t tmpi, tmpa, min = 0.0, max = 0.0 ;
+
+    ICElement_t         *icel ;
+    ICElementListNode_t *iceln = ic_element_list_begin (&flpel->ICElements) ;
+
+    if (iceln != NULL)
+    {
+        icel = ic_element_list_data (iceln) ;
+
+        min = get_min_temperature_ic_element (icel, dimensions, temperatures) ;
+        max = get_max_temperature_ic_element (icel, dimensions, temperatures) ;
+    }
+    else
+
+        return min ;
+
+    for (iceln  = ic_element_list_next (iceln) ;
+         iceln != NULL ;
+         iceln = ic_element_list_next (iceln))
+    {
+        icel = ic_element_list_data (iceln) ;
+
+        tmpi = get_min_temperature_ic_element (icel, dimensions, temperatures) ;
+        tmpa = get_max_temperature_ic_element (icel, dimensions, temperatures) ;
+
+        min = MIN (min, tmpi) ;
+        max = MAX (max, tmpa) ;
+    }
+
+    return max - min ;
 }
 
 /******************************************************************************/

@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -46,15 +46,9 @@ extern "C"
 {
 #endif
 
-#include <string.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 /******************************************************************************/
-
-    /*! Definition of the primitive type String_t */
-
-    typedef char* String_t ;
 
 
 
@@ -172,56 +166,6 @@ extern "C"
 
 
 
-    /*! \struct Coolant_t
-     *
-     *  \brief A collection of parameters describing the properties cooling fluid
-     */
-
-    struct Coolant_t
-    {
-        /*! The heat transfert coefficient in \f$ (W / ( \mu m^2 * K ) \f$
-         *  between the liquid in the channel and the walls/pins
-         */
-
-        CoolantHTC_t HTCSide ;
-
-        /*! The heat transfert coefficient in \f$ (W / ( \mu m^2 * K ) \f$
-         *  between the liquid in the channel and the top wall
-         */
-
-        CoolantHTC_t HTCTop ;
-
-        /*! The heat transfert coefficient in \f$ (W / ( \mu m^2 * K ) \f$
-         *  between the liquid in the channel and the bottom wall
-         */
-
-        CoolantHTC_t HTCBottom ;
-
-        /*! The volumetric heat capacity in \f$ J / ( \mu m^3 * K ) \f$ */
-
-        CoolantVHC_t VHC ;
-
-        /*! The flow rate per channel layer of the incolimg liquid.
-         *  Specified in \f$ \frac{ml}{min} \f$ but stored in \f$ \frac{\mu m^3}{sec} \f$.
-         *  Shared by all the channels for each layer in the 3DStack.
-         */
-
-        CoolantFR_t FlowRate ;
-
-        /*! Darcy Velocity \f$ \frac{\mu m}{sec} \f$ */
-
-        DarcyVelocity_t DarcyVelocity ;
-
-        /*! The temperarute of the coolant at the channel inlet in \f$ K \f$ */
-
-        Temperature_t TIn ;
-
-    } ;
-
-    /*! Definition of the type Coolant_t */
-
-    typedef struct Coolant_t Coolant_t ;
-
 /******************************************************************************/
 
 
@@ -264,55 +208,19 @@ extern "C"
 
     /*! \enum HeatSinkModel_t
      *
-     * Enumeration to collect the supported model of the heat sink
+     *   Enumeration to collect the supported model of the heat sink
      */
 
     enum HeatSinkModel_t
     {
-        TDICE_HEATSINK_MODEL_NONE = 0,               //!< Undefined type
-        TDICE_HEATSINK_MODEL_CONNECTION_TO_AMBIENT,  //!< Connection to ambient
-        TDICE_HEATSINK_MODEL_TRADITIONAL             //!< Traditional Heat Sink
+        TDICE_HEATSINK_NONE = 0,   //!< Undefined type
+        TDICE_HEATSINK_TOP,        //!< Top heat sink       (top-most layer)
+        TDICE_HEATSINK_BOTTOM      //!< Bottom heat sink (bottom-most layer)
     } ;
 
     /*! The definition of the type HeatSinkModel_t */
 
     typedef enum HeatSinkModel_t HeatSinkModel_t ;
-
-
-
-    /*! \def NUM_LAYERS_HEATSINK_CONNECTION_TO_AMBIENT
-     *
-     *  The number of layers of thermal cells needed to model the
-     * connection of the top layer to the enviroment
-     */
-
-#   define NUM_LAYERS_HEATSINK_CONNECTION_TO_AMBIENT 0
-
-    /*! \def NUM_LAYERS_HEATSINK_TRADITIONAL
-     *
-     *  The number of layers of thermal cells needed to model the
-     *  heat sink made with spreader and sink
-     */
-
-#   define NUM_LAYERS_HEATSINK_TRADITIONAL 2
-
-    /*! \def SOURCE_OFFSET_HEATSINK_CONNECTION_TO_AMBIENT
-     *
-     *  The offset (\# layers) within an heat sink of type
-     *  \a TDICE_HEATSINK_MODEL_CONNECTION_TO_AMBIENT to be added
-     *  to the offset of the stack element to locate the source layer
-     */
-
-#   define SOURCE_OFFSET_HEATSINK_CONNECTION_TO_AMBIENT 0
-
-    /*! \def SOURCE_OFFSET_HEATSINK_TRADITIONAL
-     *
-     *  The offset (\# layers) within an heat sink of type
-     *  \a TDICE_HEATSINK_MODEL_TRADITIONAL to be added to
-     *  the offset of the stack element to locate the source layer
-     */
-
-#   define SOURCE_OFFSET_HEATSINK_TRADITIONAL 1
 
 /******************************************************************************/
 
@@ -339,17 +247,17 @@ extern "C"
 
         TDICE_LAYER_SOLID_CONNECTED_TO_AMBIENT,
 
+        /*! Solid layer (passive) connected to the pcb to dissipate heat */
+
+        TDICE_LAYER_SOLID_CONNECTED_TO_PCB,
+
         /*! Solid layer (active) connected to the environment to dissipate heat */
 
         TDICE_LAYER_SOURCE_CONNECTED_TO_AMBIENT,
 
-        /*! Spreader layer between the chip and the sink */
+        /*! Solid layer (active) connected to the pcb to dissipate heat */
 
-        TDICE_LAYER_SPREADER,
-
-        /*! Sink layer between the spreader and the environment */
-
-        TDICE_LAYER_SINK,
+        TDICE_LAYER_SOURCE_CONNECTED_TO_PCB,
 
         /*! Liquid layer in Channel 4 resistors model */
 
@@ -381,7 +289,7 @@ extern "C"
 
         /*! Bottom wall layer in Channel/PinFins 2 rm */
 
-        TDICE_LAYER_BOTTOM_WALL,
+        TDICE_LAYER_BOTTOM_WALL
     } ;
 
     /*! The definition of the type StackLayerType_t */
@@ -397,11 +305,10 @@ extern "C"
 
     enum StackElementType_t
     {
-        TDICE_STACK_ELEMENT_NONE = 0,   //!< Undefined type
-        TDICE_STACK_ELEMENT_LAYER   ,   //!< Layer
-        TDICE_STACK_ELEMENT_CHANNEL ,   //!< Channel
-        TDICE_STACK_ELEMENT_DIE     ,   //!< Die
-        TDICE_STACK_ELEMENT_HEATSINK    //!< Heat Sink
+        TDICE_STACK_ELEMENT_NONE = 0,     //!< Undefined type
+        TDICE_STACK_ELEMENT_LAYER   ,     //!< Layer
+        TDICE_STACK_ELEMENT_CHANNEL ,     //!< Channel
+        TDICE_STACK_ELEMENT_DIE           //!< Die
     } ;
 
     /*! The definition of the type StackElementType_t */
@@ -553,7 +460,8 @@ extern "C"
         TDICE_OUTPUT_QUANTITY_NONE = 0,  //!< Undefined type
         TDICE_OUTPUT_QUANTITY_AVERAGE,   //!< Average temperature
         TDICE_OUTPUT_QUANTITY_MAXIMUM,   //!< Maximum temperature
-        TDICE_OUTPUT_QUANTITY_MINIMUM    //!< Minimum temperature
+        TDICE_OUTPUT_QUANTITY_MINIMUM,   //!< Minimum temperature
+        TDICE_OUTPUT_QUANTITY_GRADIENT   //!< Maximum - Minimum temperature
     } ;
 
 

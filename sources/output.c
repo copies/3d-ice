@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,11 +36,10 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
+#include <string.h> // For strlen
 
 #include "output.h"
-#include "macros.h"
 
 /******************************************************************************/
 
@@ -329,7 +328,7 @@ Error_t fill_output_message
     {
         InspectionPoint_t *ipoint = inspection_point_list_data (ipn) ;
 
-        if (output_type == ipoint->Type)
+        if (output_type == ipoint->OType)
 
             fill_message_inspection_point
 

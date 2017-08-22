@@ -1,5 +1,5 @@
  ##############################################################################
- # This file is part of 3D-ICE, version 2.2.5 .                               #
+ # This file is part of 3D-ICE, version 2.2.4 .                               #
  #                                                                            #
  # 3D-ICE is free software: you can  redistribute it and/or  modify it  under #
  # the terms of the  GNU General  Public  License as  published by  the  Free #
@@ -41,7 +41,7 @@
  ##############################################################################
 
 3DICE_LIBNAME   = threed-ice
-3DICE_VERSION   = 2.2.5
+3DICE_VERSION   = 2.2.4
 3DICE_RELEASE   = $(3DICE_LIBNAME)-$(3DICE_VERSION)
 
 3DICE_INCLUDE   = $(3DICE_MAIN)/include
@@ -54,6 +54,7 @@
 3DICE_TEST      = $(3DICE_MAIN)/test
 
 3DICE_FLEX_L    = $(3DICE_FLEX)/floorplan_scanner.l         \
+                  $(3DICE_FLEX)/layout_scanner.l            \
                   $(3DICE_FLEX)/stack_description_scanner.l
 3DICE_FLEX_C    = $(3DICE_FLEX_L:.l=.c)
 3DICE_FLEX_H    = $(3DICE_FLEX_L:.l=.h)
@@ -61,6 +62,7 @@
 3DICE_FLEX_D    = $(3DICE_FLEX_L:.l=.d)
 
 3DICE_BISON_Y   = $(3DICE_BISON)/floorplan_parser.y         \
+                  $(3DICE_BISON)/layout_parser.y            \
                   $(3DICE_BISON)/stack_description_parser.y
 3DICE_BISON_C   = $(3DICE_BISON_Y:.y=.c)
 3DICE_BISON_H   = $(3DICE_BISON_Y:.y=.h)
@@ -69,6 +71,7 @@
 
 3DICE_SOURCES_C = $(3DICE_SOURCES)/analysis.c                 \
                   $(3DICE_SOURCES)/channel.c                  \
+                  $(3DICE_SOURCES)/coolant.c                  \
                   $(3DICE_SOURCES)/die.c                      \
                   $(3DICE_SOURCES)/die_list.c                 \
                   $(3DICE_SOURCES)/dimensions.c               \
@@ -84,8 +87,11 @@
                   $(3DICE_SOURCES)/inspection_point_list.c    \
                   $(3DICE_SOURCES)/layer.c                    \
                   $(3DICE_SOURCES)/layer_list.c               \
+                  $(3DICE_SOURCES)/layout_file_parser.c       \
                   $(3DICE_SOURCES)/material.c                 \
                   $(3DICE_SOURCES)/material_list.c            \
+                  $(3DICE_SOURCES)/material_element.c         \
+                  $(3DICE_SOURCES)/material_element_list.c    \
                   $(3DICE_SOURCES)/network_message.c          \
                   $(3DICE_SOURCES)/network_socket.c           \
                   $(3DICE_SOURCES)/output.c                   \
@@ -96,10 +102,16 @@
                   $(3DICE_SOURCES)/stack_element_list.c       \
                   $(3DICE_SOURCES)/stack_file_parser.c        \
                   $(3DICE_SOURCES)/system_matrix.c            \
+                  $(3DICE_SOURCES)/string_t.c                 \
                   $(3DICE_SOURCES)/thermal_data.c             \
                   $(3DICE_SOURCES)/thermal_grid.c
 
+ifeq ($(SYSTEMC_WRAPPER),y)
+3DICE_SOURCES_CPP = $(3DICE_SOURCES)/IceWrapper.cpp
+endif
+
 3DICE_SOURCES_O = $(3DICE_SOURCES_C:.c=.o)
+3DICE_SOURCES_O += $(3DICE_SOURCES_CPP:.cpp=.o)
 3DICE_SOURCES_D = $(3DICE_SOURCES_C:.c=.d)
 
 3DICE_LIB_A     = $(3DICE_LIB)/lib$(3DICE_RELEASE).a
@@ -111,11 +123,23 @@
  ##############################################################################
 
 SLU_VERSION = 4.3
-SLU_MAIN    = $(HOME)/Libs/SuperLU_$(SLU_VERSION)
+SLU_MAIN    = $(HOME)/3dice/SuperLU_$(SLU_VERSION)
 SLU_INCLUDE = $(SLU_MAIN)/SRC
 SLU_LIB     = $(SLU_MAIN)/lib
 #SLU_LIBS   = -L$(SLU_LIB) -lsuperlu_$(SLU_VERSION) -lblas
 SLU_LIBS    = -L$(SLU_LIB) -lsuperlu_$(SLU_VERSION) -L/usr/lib -lblas
+
+ #
+ # SystemC variables
+ ##############################################################################
+
+SYSTEMC_VERSION = 2.3.1
+SYSTEMC_ARCH    = linux
+#SYSTEMC_ARCH    = linux64
+SYSTEMC_MAIN    = $(HOME)/Libs/systemc-$(SYSTEMC_VERSION)
+SYSTEMC_INCLUDE = $(SYSTEMC_MAIN)/include
+SYSTEMC_LIB     = $(SYSTEMC_MAIN)/lib-$(SYSTEMC_ARCH)
+SYSTEMC_LIBS    = -L$(SYSTEMC_LIB) -lsystemc
 
  #
  # Commands and flags
@@ -140,6 +164,10 @@ RMFLAGS   = -vf
 DOXYGEN   = doxygen
 DOXYFILE  = Doxyfile
 
+CXX       = g++
+CXXFLAGS  = -std=c++11 -O2 -Wall -Wextra -Werror
+INC_DIRS  = $(CINCLUDES) -I$(SYSTEMC_INCLUDE)
+
  #
  # Pattern rules
  ##############################################################################
@@ -159,4 +187,7 @@ DOXYFILE  = Doxyfile
 	     -e '/^$$/ d'       \
              -e 's/$$/ :/' < $*.dd >> $*.d
 	@rm -f $*.dd
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INC_DIRS) -c $< -o $@
 

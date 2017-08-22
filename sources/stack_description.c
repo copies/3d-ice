@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,19 +36,18 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-
 #include "stack_description.h"
-#include "macros.h"
 
 /******************************************************************************/
 
 void stack_description_init (StackDescription_t *stkd)
 {
-    stkd->FileName   = NULL ;
-    stkd->HeatSink   = NULL ;
-    stkd->Channel    = NULL ;
-    stkd->Dimensions = NULL ;
+    string_init (&stkd->FileName) ;
+
+    stkd->TopHeatSink    = NULL ;
+    stkd->BottomHeatSink = NULL ;
+    stkd->Channel        = NULL ;
+    stkd->Dimensions     = NULL ;
 
          material_list_init (&stkd->Materials) ;
             layer_list_init (&stkd->Layers) ;
@@ -60,11 +59,10 @@ void stack_description_init (StackDescription_t *stkd)
 
 void stack_description_destroy (StackDescription_t *stkd)
 {
-    if (stkd->FileName != NULL)
+    string_destroy (&stkd->FileName) ;
 
-        free (stkd->FileName) ;
-
-    heat_sink_free  (stkd->HeatSink) ;
+    heat_sink_free  (stkd->TopHeatSink) ;
+    heat_sink_free  (stkd->BottomHeatSink) ;
     channel_free    (stkd->Channel) ;
     dimensions_free (stkd->Dimensions) ;
 
@@ -87,9 +85,16 @@ void stack_description_print
 {
     material_list_print (&stkd->Materials, stream, prefix) ;
 
-    if (stkd->HeatSink != NULL)
+    if (stkd->TopHeatSink != NULL)
     {
-        heat_sink_print (stkd->HeatSink, stream, prefix) ;
+        heat_sink_print (stkd->TopHeatSink, stream, prefix) ;
+
+        fprintf (stream, "%s\n", prefix) ;
+    }
+
+    if (stkd->BottomHeatSink != NULL)
+    {
+        heat_sink_print (stkd->BottomHeatSink, stream, prefix) ;
 
         fprintf (stream, "%s\n", prefix) ;
     }
@@ -132,13 +137,18 @@ Quantity_t get_number_of_floorplan_elements
 
     stack_element_init (&stkel) ;
 
-    stkel.Id = stack_element_id ;
+    string_copy (&stkel.Id, &stack_element_id) ;
 
     StackElement_t *tmp = stack_element_list_find (&stkd->StackElements, &stkel) ;
 
     if (tmp == NULL)
+    {
+        stack_element_destroy (&stkel) ;
 
         return 0u ;
+    }
+
+    stack_element_destroy (&stkel) ;
 
     return get_number_of_floorplan_elements_stack_element (tmp) ;
 }

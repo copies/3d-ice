@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,15 +36,15 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
+#include <stdio.h>  // For the function perror
+#include <errno.h>  // For the function perror
+#include <string.h> // For the memory function memset
 #include <unistd.h>
 #include <errno.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#include "macros.h"
 #include "network_socket.h"
 
 /******************************************************************************/
@@ -281,7 +281,7 @@ Error_t receive_message_from_socket
 
     message_length *= sizeof (MessageWord_t) ;
 
-    MessageWord_t *begin = message->Type ;
+    MessageWord_t *begin = message->MType ;
 
     while (message_length > 0)
     {

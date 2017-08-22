@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,19 +36,18 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "inspection_point.h"
-#include "macros.h"
 
 /******************************************************************************/
 
 void inspection_point_init (InspectionPoint_t *ipoint)
 {
-    ipoint->FileName         = NULL ;
+    string_init (&ipoint->FileName) ;
+
     ipoint->Instant          = (OutputInstant_t)  TDICE_OUTPUT_INSTANT_NONE ;
-    ipoint->Type             = (OutputType_t)     TDICE_OUTPUT_TYPE_NONE ;
+    ipoint->OType            = (OutputType_t)     TDICE_OUTPUT_TYPE_NONE ;
     ipoint->Quantity         = (OutputQuantity_t) TDICE_OUTPUT_QUANTITY_NONE ;
     ipoint->Xval             = (ChipDimension_t) 0.0 ;
     ipoint->ActualXval       = (ChipDimension_t) 0.0 ;
@@ -67,7 +66,7 @@ void inspection_point_copy (InspectionPoint_t *dst, InspectionPoint_t *src)
     inspection_point_destroy (dst) ;
 
     dst->Instant          = src->Instant ;
-    dst->Type             = src->Type ;
+    dst->OType            = src->OType ;
     dst->Quantity         = src->Quantity ;
     dst->Xval             = src->Xval ;
     dst->ActualXval       = src->ActualXval ;
@@ -78,16 +77,14 @@ void inspection_point_copy (InspectionPoint_t *dst, InspectionPoint_t *src)
     dst->StackElement     = src->StackElement ;
     dst->FloorplanElement = src->FloorplanElement ;
 
-    dst->FileName = (src->FileName == NULL) ? NULL : strdup (src->FileName) ;
+    string_copy (&dst->FileName, &src->FileName) ;
 }
 
 /******************************************************************************/
 
 void inspection_point_destroy (InspectionPoint_t *ipoint)
 {
-    if (ipoint->FileName != NULL)
-
-        free (ipoint->FileName) ;
+    string_destroy (&ipoint->FileName) ;
 
     inspection_point_init (ipoint) ;
 }
@@ -145,7 +142,7 @@ bool inspection_point_same_filename
     InspectionPoint_t *other
 )
 {
-    return strcmp (ipoint->FileName, other->FileName) == 0 ? true : false ;
+    return string_equal (&ipoint->FileName, &other->FileName) ;
 }
 
 /******************************************************************************/
@@ -157,7 +154,7 @@ void inspection_point_print
     String_t           prefix
 )
 {
-    switch (ipoint->Type)
+    switch (ipoint->OType)
     {
         case TDICE_OUTPUT_TYPE_TCELL :
 
@@ -247,7 +244,7 @@ void inspection_point_print
 
         default :
 
-            fprintf (stderr, "Undefined inspection point command type %d\n", ipoint->Type) ;
+            fprintf (stderr, "Undefined inspection point command type %d\n", ipoint->OType) ;
             break ;
     }
 
@@ -274,28 +271,33 @@ void align_tcell
     Dimensions_t    *dimensions
 )
 {
-    FOR_EVERY_ROW (row_index, dimensions)
-    {
-        ipoint->RowIndex   = row_index ;
 
-        if (   yval >= get_cell_location_y (dimensions, row_index)
-            && yval <  get_cell_location_y (dimensions, row_index + 1))
+    CellIndex_t row ;
+
+    for (row = first_row (dimensions) ; row <= last_row (dimensions) ; row++)
+    {
+        ipoint->RowIndex = row ;
+
+        if (   yval >= get_cell_location_y (dimensions, row)
+            && yval <  get_cell_location_y (dimensions, row + 1))
         {
-            ipoint->ActualYval = get_cell_location_y (dimensions, row_index) ;
+            ipoint->ActualYval = get_cell_location_y (dimensions, row) ;
             break ;
         }
     }
 
     ipoint->Yval = yval ;
 
-    FOR_EVERY_COLUMN (column_index, dimensions)
-    {
-        ipoint->ColumnIndex = column_index ;
+    CellIndex_t column ;
 
-        if (   xval >= get_cell_location_x (dimensions, column_index)
-            && xval <  get_cell_location_x (dimensions, column_index + 1))
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
+    {
+        ipoint->ColumnIndex = column ;
+
+        if (   xval >= get_cell_location_x (dimensions, column)
+            && xval <  get_cell_location_x (dimensions, column + 1))
         {
-            ipoint->ActualXval = get_cell_location_x (dimensions, column_index) ;
+            ipoint->ActualXval = get_cell_location_x (dimensions, column) ;
             break ;
         }
     }
@@ -312,7 +314,7 @@ bool is_inspection_point
     OutputQuantity_t   quantity
 )
 {
-    if (ipoint->Type != type)
+    if (ipoint->OType != type)
 
         return false ;
 
@@ -362,7 +364,7 @@ Error_t generate_inspection_point_header
         return TDICE_FAILURE ;
     }
 
-    switch (ipoint->Type)
+    switch (ipoint->OType)
     {
         case TDICE_OUTPUT_TYPE_TCELL :
 
@@ -397,6 +399,10 @@ Error_t generate_inspection_point_header
             else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 fprintf (output_stream, "Average ");
+
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                fprintf (output_stream, "Gradient ");
 
             else
             {
@@ -442,6 +448,10 @@ Error_t generate_inspection_point_header
             else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 fprintf (output_stream, "Average ");
+
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                fprintf (output_stream, "Gradient ");
 
             else
             {
@@ -499,6 +509,10 @@ Error_t generate_inspection_point_header
             else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 fprintf (output_stream, "Average ");
+
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                fprintf (output_stream, "Gradient ");
 
             else
             {
@@ -559,7 +573,7 @@ Error_t generate_inspection_point_output
         return TDICE_FAILURE ;
     }
 
-    switch (ipoint->Type)
+    switch (ipoint->OType)
     {
         case TDICE_OUTPUT_TYPE_TCELL :
 
@@ -570,18 +584,19 @@ Error_t generate_inspection_point_output
                  ipoint->RowIndex, ipoint->ColumnIndex) ;
 
             fprintf (output_stream,
-                "%5.3e \t %7.3e\n", current_time, *(temperatures + index)) ;
+                "%5.3f \t %7.3f\n", current_time, *(temperatures + index)) ;
 
             break ;
 
         case TDICE_OUTPUT_TYPE_TFLP :
 
-            fprintf (output_stream, "%5.3e \t ", current_time) ;
+            fprintf (output_stream, "%5.3f \t ", current_time) ;
 
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
 
             result = NULL ;
 
@@ -599,16 +614,31 @@ Error_t generate_inspection_point_output
                     (&ipoint->StackElement->Pointer.Die->Floorplan,
                      dimensions, temperatures, &n_flp_el, NULL) ;
 
-            else
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 result = get_all_avg_temperatures_floorplan
 
                     (&ipoint->StackElement->Pointer.Die->Floorplan,
                      dimensions, temperatures, &n_flp_el, NULL) ;
 
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                result = get_all_gradient_temperatures_floorplan
+
+                    (&ipoint->StackElement->Pointer.Die->Floorplan,
+                     dimensions, temperatures, &n_flp_el, NULL) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tflp\n") ;
+
+                break ;
+            }
+
             for (index = 0 ; index != n_flp_el ; index++)
 
-                fprintf (output_stream, "%5.3e \t ", result [index]) ;
+                fprintf (output_stream, "%5.3f \t ", result [index]) ;
 
             fprintf (output_stream, "\n") ;
 
@@ -621,7 +651,8 @@ Error_t generate_inspection_point_output
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
 
             if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_MAXIMUM)
 
@@ -635,14 +666,28 @@ Error_t generate_inspection_point_output
 
                     (ipoint->FloorplanElement, dimensions, temperatures) ;
 
-            else
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 temperature = get_avg_temperature_floorplan_element
 
                     (ipoint->FloorplanElement, dimensions, temperatures) ;
 
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                temperature = get_gradient_temperature_floorplan_element
+
+                    (ipoint->FloorplanElement, dimensions, temperatures) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tflpel\n") ;
+
+                break ;
+            }
+
             fprintf (output_stream,
-                "%5.3e \t %7.3e\n", current_time, temperature) ;
+                "%5.3f \t %7.3f\n", current_time, temperature) ;
 
             break ;
 
@@ -673,7 +718,8 @@ Error_t generate_inspection_point_output
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
 
             if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_MAXIMUM)
 
@@ -687,14 +733,28 @@ Error_t generate_inspection_point_output
 
                      (ipoint->StackElement->Pointer.Channel, dimensions, temperatures) ;
 
-            else
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                  temperature = get_avg_temperature_channel_outlet
 
                      (ipoint->StackElement->Pointer.Channel, dimensions, temperatures) ;
 
+            else if (ipoint->Quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                 temperature = get_gradient_temperature_channel_outlet
+
+                     (ipoint->StackElement->Pointer.Channel, dimensions, temperatures) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tcoolant\n") ;
+
+                break ;
+            }
+
             fprintf (output_stream,
-                "%5.3e \t %7.3e\n", current_time, temperature) ;
+                "%5.3f \t %7.3f\n", current_time, temperature) ;
 
             break ;
 
@@ -728,7 +788,7 @@ void fill_message_inspection_point
     NetworkMessage_t  *message
 )
 {
-    switch (ipoint->Type)
+    switch (ipoint->OType)
     {
         case TDICE_OUTPUT_TYPE_TCELL :
         {
@@ -749,7 +809,8 @@ void fill_message_inspection_point
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
 
             Temperature_t *tmp ;
             Quantity_t nflp, index ;
@@ -768,12 +829,27 @@ void fill_message_inspection_point
                     (&ipoint->StackElement->Pointer.Die->Floorplan, dimensions,
                       temperatures, &nflp, NULL) ;
 
-            else
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 tmp = get_all_avg_temperatures_floorplan
 
                     (&ipoint->StackElement->Pointer.Die->Floorplan, dimensions,
                       temperatures, &nflp, NULL) ;
+
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                tmp = get_all_gradient_temperatures_floorplan
+
+                    (&ipoint->StackElement->Pointer.Die->Floorplan, dimensions,
+                      temperatures, &nflp, NULL) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tflp\n") ;
+
+                break ;
+            }
 
             insert_message_word (message, &nflp) ;
 
@@ -793,7 +869,9 @@ void fill_message_inspection_point
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
+
 
             float temperature ;
 
@@ -809,11 +887,25 @@ void fill_message_inspection_point
 
                     (ipoint->FloorplanElement, dimensions, temperatures) ;
 
-            else
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 temperature = get_avg_temperature_floorplan_element
 
                     (ipoint->FloorplanElement, dimensions, temperatures) ;
+
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                temperature = get_gradient_temperature_floorplan_element
+
+                    (ipoint->FloorplanElement, dimensions, temperatures) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tflpel\n") ;
+
+                break ;
+            }
 
             insert_message_word (message, &temperature) ;
 
@@ -835,11 +927,14 @@ void fill_message_inspection_point
 
                 (dimensions,
                  get_source_layer_offset(ipoint->StackElement),
-                 0, 0) ;
+                 first_row (dimensions), first_column (dimensions)) ;
 
-            FOR_EVERY_ROW (row_index, dimensions)
+            CellIndex_t row ;
+            CellIndex_t column ;
+
+            for (row = first_row (dimensions) ; row <= last_row  (dimensions) ; row++)
             {
-                FOR_EVERY_COLUMN (column_index, dimensions)
+                for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
                 {
                     float temperature = *(temperatures + index++) ;
 
@@ -865,11 +960,14 @@ void fill_message_inspection_point
 
                 (dimensions,
                  get_source_layer_offset(ipoint->StackElement),
-                 0, 0) ;
+                 first_row (dimensions), first_column (dimensions)) ;
 
-            FOR_EVERY_ROW (row_index, dimensions)
+            CellIndex_t row ;
+            CellIndex_t column ;
+
+            for (row = first_row (dimensions) ; row <= last_row (dimensions) ; row++)
             {
-                FOR_EVERY_COLUMN (column_index, dimensions)
+                for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
                 {
                     float source = *(sources + index++) ;
 
@@ -884,7 +982,8 @@ void fill_message_inspection_point
             temperatures += get_cell_offset_in_stack
 
                 (dimensions,
-                 get_source_layer_offset(ipoint->StackElement), 0, 0) ;
+                 get_source_layer_offset(ipoint->StackElement),
+                 first_row (dimensions), first_column (dimensions)) ;
 
             float temperature ;
 
@@ -902,12 +1001,27 @@ void fill_message_inspection_point
                     (ipoint->StackElement->Pointer.Channel,
                      dimensions, temperatures) ;
 
-            else
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_AVERAGE)
 
                 temperature = get_avg_temperature_channel_outlet
 
                     (ipoint->StackElement->Pointer.Channel,
                      dimensions, temperatures) ;
+
+            else if (output_quantity == TDICE_OUTPUT_QUANTITY_GRADIENT)
+
+                temperature = get_gradient_temperature_channel_outlet
+
+                    (ipoint->StackElement->Pointer.Channel,
+                     dimensions, temperatures) ;
+
+            else
+            {
+                fprintf (stderr,
+                    "Inspection Point: Error reading output quantity for Tcoolant\n") ;
+
+                break ;
+            }
 
             insert_message_word (message, &temperature) ;
 

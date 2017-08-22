@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,10 +36,10 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/free
+#include <string.h> // For the memory function memcpy
 
 #include "dimensions.h"
-#include "macros.h"
 
 /******************************************************************************/
 
@@ -274,9 +274,11 @@ void print_axes (Dimensions_t *dimensions)
         return ;
     }
 
-    FOR_EVERY_COLUMN (column_index, dimensions)
+    CellIndex_t column ;
 
-        fprintf (file, "%5.2f\n", get_cell_center_x (dimensions, column_index)) ;
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
+
+        fprintf (file, "%5.2f\n", get_cell_center_x (dimensions, column)) ;
 
     fclose (file) ;
 
@@ -288,9 +290,11 @@ void print_axes (Dimensions_t *dimensions)
         return ;
     }
 
-    FOR_EVERY_ROW (row_index, dimensions)
+    CellIndex_t row ;
 
-        fprintf (file, "%5.2f\n", get_cell_center_y (dimensions, row_index)) ;
+    for (row = first_row (dimensions) ; row <= last_row (dimensions) ; row++)
+
+        fprintf (file, "%5.2f\n", get_cell_center_y (dimensions, row)) ;
 
     fclose (file) ;
 }
@@ -301,8 +305,7 @@ void compute_number_of_connections
 (
     Dimensions_t   *dimensions,
     Quantity_t      num_channels,
-    ChannelModel_t  channel_model,
-    HeatSinkModel_t sink_model
+    ChannelModel_t  channel_model
 )
 {
     CellIndex_t nlayers  = dimensions->Grid.NLayers ;
@@ -311,33 +314,6 @@ void compute_number_of_connections
 
     CellIndex_t nlayers_for_channel    = num_channels * NUM_LAYERS_CHANNEL_2RM ;
     CellIndex_t nlayers_except_channel = nlayers - nlayers_for_channel ;
-
-    CellIndex_t nlayers_heatsink = 0u ;
-
-    switch (sink_model)
-    {
-        case TDICE_HEATSINK_MODEL_NONE :
-
-            nlayers_heatsink = 0u ;
-
-            break ;
-
-        case TDICE_HEATSINK_MODEL_CONNECTION_TO_AMBIENT :
-
-            nlayers_heatsink = NUM_LAYERS_HEATSINK_CONNECTION_TO_AMBIENT ;
-
-            break ;
-
-        case TDICE_HEATSINK_MODEL_TRADITIONAL :
-
-            nlayers_heatsink = NUM_LAYERS_HEATSINK_TRADITIONAL ;
-
-            break ;
-
-        default :
-
-            fprintf (stderr, "Error: unknown sink model %d\n", sink_model) ;
-    }
 
     CellIndex_t tmp = 2u ;
 
@@ -357,10 +333,10 @@ void compute_number_of_connections
                 2 * (nlayers - 1) * nrows * ncolumns
                 +
                 // Number of coefficients North <-> South
-                2 * (nlayers - nlayers_heatsink) * (nrows - 1) * ncolumns
+                2 * nlayers * (nrows - 1) * ncolumns
                 +
                 // Number of coefficients East <-> West
-                2 * (nlayers - nlayers_heatsink) * nrows * (ncolumns - 1) ;
+                2 * nlayers * nrows * (ncolumns - 1) ;
 
             break ;
         }
@@ -382,10 +358,10 @@ void compute_number_of_connections
                 2 * nlayers_except_channel * nrows * ncolumns
                 +
                 // Number of coefficients North <-> South
-                2 * (nlayers_except_channel - nlayers_heatsink) * (nrows - 1) * ncolumns
+                2 * nlayers_except_channel * (nrows - 1) * ncolumns
                 +
                 // Number of coefficients East <-> West
-                2 * (nlayers_except_channel - nlayers_heatsink) * nrows * (ncolumns - 1)
+                2 * nlayers_except_channel * nrows * (ncolumns - 1)
                 +
 
                 // For Channel Cells
@@ -413,6 +389,48 @@ void compute_number_of_connections
 
 /******************************************************************************/
 
+CellIndex_t first_row (Dimensions_t __attribute__ ((unused)) *dimensions)
+{
+    return 0u ;
+}
+
+/******************************************************************************/
+
+CellIndex_t last_row (Dimensions_t *dimensions)
+{
+    return get_number_of_rows (dimensions) - 1 ;
+}
+
+/******************************************************************************/
+
+CellIndex_t first_column (Dimensions_t __attribute__ ((unused)) *dimensions)
+{
+    return 0u ;
+}
+
+/******************************************************************************/
+
+CellIndex_t last_column (Dimensions_t *dimensions)
+{
+    return get_number_of_columns (dimensions) - 1 ;
+}
+
+/******************************************************************************/
+
+CellIndex_t first_layer (Dimensions_t __attribute__ ((unused)) *dimensions)
+{
+    return 0u ;
+}
+
+/******************************************************************************/
+
+CellIndex_t last_layer (Dimensions_t *dimensions)
+{
+    return get_number_of_layers (dimensions) - 1 ;
+}
+
+/******************************************************************************/
+
 CellDimension_t get_cell_length
 (
   Dimensions_t *dimensions,
@@ -421,7 +439,7 @@ CellDimension_t get_cell_length
 {
     // column_index < 0 not tested since CellIndex_t is unsigned
 
-    if (column_index > LAST_COLUMN_INDEX (dimensions))
+    if (column_index > last_column (dimensions))
     {
         fprintf (stderr,
             "ERROR: column index %d is out of range\n", column_index) ;
@@ -429,11 +447,11 @@ CellDimension_t get_cell_length
         return 0.0 ;
     }
 
-    if (IS_FIRST_COLUMN (column_index))
+    if (column_index == first_column (dimensions))
 
         return dimensions->Cell.FirstWallLength ;
 
-    else if (IS_LAST_COLUMN (column_index, dimensions))
+    else if (column_index == last_column (dimensions))
 
         return dimensions->Cell.LastWallLength ;
 
@@ -458,7 +476,7 @@ CellDimension_t get_cell_width
 {
     // column_index < 0 not tested since CellIndex_t is unsigned
 
-    if (row_index > LAST_ROW_INDEX (dimensions))
+    if (row_index > last_row (dimensions))
     {
         fprintf (stderr,
             "ERROR: row index %d is out of range\n", row_index) ;
@@ -505,11 +523,11 @@ ChipDimension_t get_cell_center_x
     CellIndex_t   column_index
 )
 {
-    if (IS_FIRST_COLUMN (column_index))
+    if (column_index == first_column (dimensions))
 
         return dimensions->Cell.FirstWallLength / 2.0 ;
 
-    else if (IS_LAST_COLUMN (column_index, dimensions))
+    else if (column_index == last_column (dimensions))
 
         return   (dimensions->Cell.FirstWallLength      )
                + (dimensions->Cell.ChannelLength   / 2.0) * (column_index    )
@@ -543,7 +561,7 @@ ChipDimension_t get_cell_location_x
     CellIndex_t   column_index
 )
 {
-    if (IS_FIRST_COLUMN (column_index))
+    if (column_index == first_column (dimensions))
 
         return 0.0 ;
 

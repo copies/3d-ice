@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,17 +36,16 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "material.h"
-#include "macros.h"
 
 /******************************************************************************/
 
 void material_init (Material_t *material)
 {
-    material->Id                     = NULL ;
+    string_init (&material->Id) ;
+
     material->VolumetricHeatCapacity = (SolidVHC_t) 0.0 ;
     material->ThermalConductivity    = (SolidTC_t) 0.0 ;
 }
@@ -57,7 +56,7 @@ void material_copy (Material_t *dst, Material_t *src)
 {
     material_destroy (dst) ;
 
-    dst->Id = (src->Id == NULL) ? NULL : strdup (src->Id) ;
+    string_copy (&dst->Id, &src->Id) ;
 
     dst->VolumetricHeatCapacity = src->VolumetricHeatCapacity ;
     dst->ThermalConductivity    = src->ThermalConductivity ;
@@ -67,9 +66,7 @@ void material_copy (Material_t *dst, Material_t *src)
 
 void material_destroy (Material_t *material)
 {
-    if (material->Id != NULL)
-
-        free (material->Id) ;
+    string_destroy (&material->Id) ;
 
     material_init (material) ;
 }
@@ -99,7 +96,7 @@ Material_t *material_clone (Material_t *material)
 
     if (newm != NULL)
 
-        material_copy (newm, material) ;
+            material_copy (newm, material) ;
 
     return newm ;
 }
@@ -121,7 +118,7 @@ void material_free (Material_t *material)
 
 bool material_same_id (Material_t *material, Material_t *other)
 {
-    return strcmp (material->Id, other->Id) == 0 ? true : false ;
+    return string_equal (&material->Id, &other->Id) ;
 }
 
 /******************************************************************************/

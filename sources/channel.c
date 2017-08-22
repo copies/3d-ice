@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,50 +36,11 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "channel.h"
 #include "macros.h"
 
-/******************************************************************************/
-
-void coolant_init (Coolant_t *coolant)
-{
-    coolant->HTCSide       = (CoolantHTC_t) 0.0 ;
-    coolant->HTCTop        = (CoolantHTC_t) 0.0 ;
-    coolant->HTCBottom     = (CoolantHTC_t) 0.0 ;
-    coolant->VHC           = (CoolantVHC_t) 0.0 ;
-    coolant->FlowRate      = (CoolantFR_t) 0.0 ;
-    coolant->DarcyVelocity = (DarcyVelocity_t) 0.0 ;
-    coolant->TIn           = (Temperature_t) 0.0 ;
-}
-
-/******************************************************************************/
-
-void coolant_copy (Coolant_t *dst, Coolant_t *src)
-{
-    coolant_destroy (dst) ;
-
-    dst->HTCSide       = src->HTCSide ;
-    dst->HTCTop        = src->HTCTop ;
-    dst->HTCBottom     = src->HTCBottom ;
-    dst->VHC           = src->VHC ;
-    dst->FlowRate      = src->FlowRate ;
-    dst->DarcyVelocity = src->DarcyVelocity ;
-    dst->TIn           = src->TIn ;
-}
-
-/******************************************************************************/
-
-void coolant_destroy (Coolant_t *coolant)
-{
-    // Nothing to do ...
-
-    coolant_init (coolant) ;
-}
-
-/******************************************************************************/
-/******************************************************************************/
 /******************************************************************************/
 
 void channel_init (Channel_t *channel)
@@ -268,7 +229,7 @@ Cconv_t get_convective_term
     CellIndex_t   column_index
 )
 {
-    Cconv_t C = 0.0 ;
+    Cconv_t C = (Cconv_t) 0.0 ;
 
     switch (channel->ChannelModel)
     {
@@ -329,13 +290,15 @@ Temperature_t get_max_temperature_channel_outlet
 {
     temperatures += get_cell_offset_in_layer
 
-        (dimensions, LAST_ROW_INDEX(dimensions), 0) ;
+        (dimensions, last_row(dimensions), first_column (dimensions)) ;
 
     Temperature_t max = *temperatures ;
 
-    FOR_EVERY_COLUMN (column_index, dimensions)
+    CellIndex_t column ;
+
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
     {
-        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column_index) == true)
+        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column) == true)
 
             max = MAX (max, *temperatures) ;
 
@@ -356,13 +319,15 @@ Temperature_t get_min_temperature_channel_outlet
 {
     temperatures += get_cell_offset_in_layer
 
-        (dimensions, LAST_ROW_INDEX(dimensions), 0) ;
+        (dimensions, last_row(dimensions), first_column (dimensions)) ;
 
     Temperature_t min = *temperatures ;
 
-    FOR_EVERY_COLUMN (column_index, dimensions)
+    CellIndex_t column ;
+
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
     {
-        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column_index) == true)
+        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column) == true)
 
             min = MIN (min, *temperatures) ;
 
@@ -383,13 +348,15 @@ Temperature_t get_avg_temperature_channel_outlet
 {
     temperatures += get_cell_offset_in_layer
 
-        (dimensions, LAST_ROW_INDEX(dimensions), 0) ;
+        (dimensions, last_row (dimensions), first_column (dimensions)) ;
 
     Temperature_t avg = *temperatures ;
 
-    FOR_EVERY_COLUMN (column_index, dimensions)
+    CellIndex_t column ;
+
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
     {
-        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column_index) == true)
+        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column) == true)
 
             avg += *temperatures ;
 
@@ -397,6 +364,38 @@ Temperature_t get_avg_temperature_channel_outlet
     }
 
     return avg / (Temperature_t) channel->NChannels ;
+}
+
+/******************************************************************************/
+
+Temperature_t get_gradient_temperature_channel_outlet
+(
+    Channel_t     *channel,
+    Dimensions_t  *dimensions,
+    Temperature_t *temperatures
+)
+{
+    temperatures += get_cell_offset_in_layer
+
+        (dimensions, last_row(dimensions), first_column (dimensions)) ;
+
+    Temperature_t max = *temperatures ;
+    Temperature_t min = *temperatures ;
+
+    CellIndex_t column ;
+
+    for (column = first_column (dimensions) ; column <= last_column (dimensions) ; column++)
+    {
+        if (IS_CHANNEL_COLUMN(channel->ChannelModel, column) == true)
+        {
+            min = MIN (min, *temperatures) ;
+            max = MAX (max, *temperatures) ;
+        }
+
+        temperatures++ ;
+    }
+
+    return max ;
 }
 
 /******************************************************************************/

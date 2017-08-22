@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -36,20 +36,23 @@
  * 1015 Lausanne, Switzerland           Url  : http://esl.epfl.ch/3d-ice.html *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> // For the memory functions malloc/free
 
 #include "layer.h"
-#include "macros.h"
+#include "layout_file_parser.h"
 
 /******************************************************************************/
 
 void layer_init (Layer_t *layer)
 {
-    layer->Id     = NULL ;
+    string_init (&layer->Id) ;
+    string_init (&layer->LayoutFileName) ;
+
     layer->Height = (CellDimension_t) 0.0 ;
 
     material_init (&layer->Material) ;
+
+    material_element_list_init (&layer->MaterialLayout) ;
 }
 
 /******************************************************************************/
@@ -58,22 +61,26 @@ void layer_copy (Layer_t *dst, Layer_t *src)
 {
     layer_destroy (dst) ;
 
-    dst->Id = (src->Id == NULL) ? NULL : strdup (src->Id) ;
+    string_copy (&dst->Id, &src->Id) ;
+    string_copy (&dst->LayoutFileName, &src->LayoutFileName) ;
 
-    dst->Height   = src->Height ;
+    dst->Height = src->Height ;
 
     material_copy (&dst->Material, &src->Material) ;
+
+    material_element_list_copy (&dst->MaterialLayout, &src->MaterialLayout) ;
 }
 
 /******************************************************************************/
 
 void layer_destroy (Layer_t *layer)
 {
-    if (layer->Id != NULL)
-
-        free (layer->Id) ;
+    string_destroy (&layer->Id) ;
+    string_destroy (&layer->LayoutFileName) ;
 
     material_destroy (&layer->Material) ;
+
+    material_element_list_destroy (&layer->MaterialLayout) ;
 
     layer_init (layer) ;
 }
@@ -125,7 +132,7 @@ void layer_free (Layer_t *layer)
 
 bool layer_same_id (Layer_t *layer, Layer_t *other)
 {
-    return strcmp (layer->Id, other->Id) == 0 ? true : false ;
+    return string_equal (&layer->Id, &other->Id) ;
 }
 
 /******************************************************************************/
@@ -143,6 +150,87 @@ void layer_print (Layer_t *layer, FILE *stream, String_t prefix)
     fprintf (stream,
         "%s   material %s ;\n",
         prefix, layer->Material.Id) ;
+
+    fprintf (stream,
+        "%s   layout   \"%s\" ;\n",
+        prefix, layer->LayoutFileName) ;
+}
+
+/******************************************************************************/
+
+Error_t fill_layout
+(
+    Layer_t        *layer,
+    Dimensions_t   *dimensions,
+    MaterialList_t *materials,
+    String_t        filename
+)
+{
+    Error_t result ;
+
+    result = parse_layout_file (filename, layer, materials, dimensions) ;
+
+    if (result == TDICE_FAILURE)
+
+        return TDICE_FAILURE ;
+
+    return TDICE_SUCCESS ;
+}
+
+/******************************************************************************/
+
+SolidTC_t get_thermal_conductivity
+(
+    Layer_t      *layer,
+    CellIndex_t   row_index,
+    CellIndex_t   column_index,
+    Dimensions_t *dimensions
+)
+{
+    Material_t *tmp = NULL ;
+
+    MaterialElementListNode_t *melementn ;
+
+    for (melementn  = material_element_list_begin (&layer->MaterialLayout) ;
+         melementn != NULL ;
+         melementn  = material_element_list_next (melementn))
+    {
+        MaterialElement_t *melement = material_element_list_data (melementn) ;
+
+        tmp = get_material_at_location (melement, row_index, column_index, dimensions) ;
+
+        if (tmp != NULL)    return tmp->ThermalConductivity ;
+    }
+
+    return layer->Material.ThermalConductivity ;
+}
+
+/******************************************************************************/
+
+SolidTC_t get_volumetric_heat_capacity
+(
+    Layer_t      *layer,
+    CellIndex_t   row_index,
+    CellIndex_t   column_index,
+    Dimensions_t *dimensions
+)
+{
+    Material_t *tmp = NULL ;
+
+    MaterialElementListNode_t *melementn ;
+
+    for (melementn  = material_element_list_begin (&layer->MaterialLayout) ;
+         melementn != NULL ;
+         melementn  = material_element_list_next (melementn))
+    {
+        MaterialElement_t *melement = material_element_list_data (melementn) ;
+
+        tmp = get_material_at_location (melement, row_index, column_index, dimensions) ;
+
+        if (tmp != NULL)    return tmp->VolumetricHeatCapacity ;
+    }
+
+    return layer->Material.VolumetricHeatCapacity ;
 }
 
 /******************************************************************************/

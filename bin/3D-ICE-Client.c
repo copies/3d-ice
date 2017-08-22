@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -99,25 +99,31 @@ int main (int argc, char** argv)
 
     /* Checks if all arguments are there **************************************/
 
-    if (argc != 4)
+#define NARGC        4
+#define EXE_NAME     argv[0]
+#define NSLOTS       argv[1]
+#define SERVER_IP    argv[2]
+#define SERVER_PORT  argv[3]
+
+    if (argc != NARGC)
     {
-        fprintf (stderr, "Usage: \"%s nslots server_ip server_port\n", argv[0]) ;
+        fprintf (stderr, "Usage: \"%s nslots server_ip server_port\n", EXE_NAME) ;
 
         return EXIT_FAILURE ;
     }
 
-    nslots = atoi (argv[1]) ;
+    nslots = atoi (NSLOTS) ;
 
-    if (strlen (argv[2]) > MAX_SERVER_IP - 1)
+    if (strlen (SERVER_IP) > MAX_SERVER_IP - 1)
     {
-        fprintf (stderr, "Server ip %s too long !!!\n", argv[2]) ;
+        fprintf (stderr, "Server ip %s too long !!!\n", SERVER_IP) ;
 
         return EXIT_FAILURE ;
     }
 
-    strcpy (server_ip, argv[2]) ;
+    strcpy (server_ip, SERVER_IP) ;
 
-    server_port = atoi (argv[3]) ;
+    server_port = atoi (SERVER_PORT) ;
 
     /* Creates socket *********************************************************/
 
@@ -253,13 +259,13 @@ int main (int argc, char** argv)
         extract_message_word (&server_reply, &time,     0) ;
         extract_message_word (&server_reply, &nresults, 1) ;
 
-        fprintf (stdout, "%5.3e sec : \t", time) ;
+        fprintf (stdout, "%5.2f sec : \t", time) ;
 
         for (index = 2, nresults += 2 ; index != nresults ; index++)
         {
             extract_message_word (&server_reply, &temperature, index) ;
 
-            fprintf (stdout, "%5.3e K \t", temperature) ;
+            fprintf (stdout, "%5.2f K \t", temperature) ;
         }
 
         network_message_destroy (&server_reply) ;
@@ -299,7 +305,7 @@ int main (int argc, char** argv)
                 {
                     extract_message_word (&server_reply, &temperature, index) ;
 
-                    fprintf (tmap, "%5.3e ", temperature) ;
+                    fprintf (tmap, "%5.2f ", temperature) ;
                 }
                 fprintf (tmap, "\n") ;
             }
@@ -337,7 +343,7 @@ int main (int argc, char** argv)
         {
             extract_message_word (&server_reply, &temperature, index) ;
 
-            fprintf (stdout, "%5.3e K \t", temperature) ;
+            fprintf (stdout, "%5.2f K \t", temperature) ;
         }
 
         fprintf (stdout, "\n") ;

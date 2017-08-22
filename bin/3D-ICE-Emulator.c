@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -59,9 +59,13 @@ int main(int argc, char** argv)
     // Checks if there are the all the arguments
     ////////////////////////////////////////////////////////////////////////////
 
-    if (argc != 2)
+#define NARGC        2
+#define EXE_NAME     argv[0]
+#define STK_FILE     argv[1]
+
+    if (argc != NARGC)
     {
-        fprintf(stderr, "Usage: \"%s file.stk\"\n", argv[0]) ;
+        fprintf(stderr, "Usage: \"%s file.stk\"\n", EXE_NAME) ;
         return EXIT_FAILURE ;
     }
 
@@ -74,7 +78,7 @@ int main(int argc, char** argv)
     analysis_init          (&analysis) ;
     output_init            (&output) ;
 
-    error = parse_stack_description_file (argv[1], &stkd, &analysis, &output) ;
+    error = parse_stack_description_file (STK_FILE, &stkd, &analysis, &output) ;
 
     if (error != TDICE_SUCCESS)    return EXIT_FAILURE ;
 
@@ -149,7 +153,7 @@ int main(int argc, char** argv)
 
         if (sim_result == TDICE_STEP_DONE || sim_result == TDICE_SLOT_DONE)
         {
-            fprintf (stdout, "%.3e ", get_simulated_time (&analysis)) ;
+            fprintf (stdout, "%.3f ", get_simulated_time (&analysis)) ;
 
             fflush (stdout) ;
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * This file is part of 3D-ICE, version 2.2.5 .                               *
+ * This file is part of 3D-ICE, version 2.2.4 .                               *
  *                                                                            *
  * 3D-ICE is free software: you can  redistribute it and/or  modify it  under *
  * the terms of the  GNU General  Public  License as  published by  the  Free *
@@ -48,33 +48,26 @@ extern "C"
 
 /******************************************************************************/
 
-#include <stdio.h>
+#include <stdio.h> // For the file type FILE
 
 #include "types.h"
-#include "material.h"
+#include "string_t.h"
+
+#include "dimensions.h"
 
 /******************************************************************************/
 
      /*! \struct HeatSink_t
      *
-     *  \brief Structure used to store data about the heat sink on
-     *         top of the 2D/3D stack.
+     *  \brief Structure used to store data about the heat dissipation
+     *         through the top or bottom surfaces of the 2D/3D stack
      */
 
     struct HeatSink_t
     {
-
         /*! The type of the heastink */
 
         HeatSinkModel_t SinkModel ;
-
-        /*! The number of layer composing the heatsink in the 3d stack */
-
-        CellIndex_t NLayers ;
-
-        /*! The offset (\# layers) of the source layer within the heatsink */
-
-        CellIndex_t SourceLayerOffset ;
 
         /*! The heat transfert coefficient (from 3d stack to the environment).
             Used for both connection to enviroment and spreader+sink */
@@ -83,33 +76,9 @@ extern "C"
 
         /*! The temperarute of the environment in \f$ K \f$ */
 
-        Temperature_t AmbientTemperature ;
+       Temperature_t AmbientTemperature ;
 
-        /*! Height of the sink layer */
-
-        CellDimension_t SinkHeight ;
-
-        /*! Area of the sink layer */
-
-        CellDimension_t SinkArea ;
-
-        /*! Height of the spreader layer */
-
-        CellDimension_t SpreaderHeight ;
-
-        /*! Area of the spreader layer */
-
-        CellDimension_t SpreaderArea ;
-
-        /*! Material of the sink layer (used in case of connection
-         *  to ambient) */
-
-        Material_t SinkMaterial ;
-
-        /*! Material of the spreader layer */
-
-        Material_t SpreaderMaterial ;
-    } ;
+     } ;
 
     /*! Definition of the type HeatSink_t */
 
@@ -195,6 +164,27 @@ extern "C"
 
 
 
+    /*! Returns the conductance of the heat sink in a given position
+     *
+     * \param hsink        the address of the heat sink structure
+     * \param dimensions   pointer to the structure storing the dimensions
+     * \param row_index    the index of the row
+     * \param column_index the index of the column
+     *
+     * \return the top conductance of the thermal cell in position
+     *         (\a layer_index , \a row_index , \a column_index ).
+     */
+
+    Conductance_t heat_sink_conductance
+    (
+        HeatSink_t    *hsink,
+        Dimensions_t  *dimensions,
+        CellIndex_t    row_index,
+        CellIndex_t    column_index
+    ) ;
+
+
+
     /*! Prints the heat sink declaration as it looks in the stack file
      *
      * \param hsink the address of the structure to print
@@ -204,78 +194,6 @@ extern "C"
      */
 
     void heat_sink_print (HeatSink_t *hsink, FILE *stream, String_t prefix) ;
-
-
-
-    /*! Returns the equivalent volumetric heat capacity of the material of the
-     *  spread layer
-     *
-     * \param hsink      the pointer to the heat sink
-     * \param chip_area the area of the chip
-     *
-     * \return the equivalent volumetric heat capacity of the spread layer
-     * \return \c 0 if the model of the heat sink is not correct
-     */
-
-    SolidTC_t get_spreader_volumetric_heat_capacity
-    (
-        HeatSink_t      *hsink,
-        CellDimension_t  chip_area
-    ) ;
-
-
-
-    /*! Returns the equivalent volumetric heat capacity of the material of the
-     *  sink layer
-     *
-     * \param hsink      the pointer to the heat sink
-     * \param chip_area the area of the chip
-     *
-     * \return the equivalent volumetric heat capacity of the sink layer
-     * \return \c 0 if the model of the heat sink is not correct
-     */
-
-    SolidTC_t get_sink_volumetric_heat_capacity
-    (
-        HeatSink_t      *hsink,
-        CellDimension_t  chip_area
-    ) ;
-
-
-
-    /*! Returns the equivalent thermal conductivity of the material of the
-     *  spread layer
-     *
-     * \param hsink      the pointer to the heat sink
-     * \param chip_area the area of the chip
-     *
-     * \return the equivalent thermal conductivity of the spread layer
-     * \return \c 0 if the model of the heat sink is not correct
-     */
-
-    SolidTC_t get_spreader_thermal_conductivity
-    (
-        HeatSink_t      *hsink,
-        CellDimension_t  chip_area
-    ) ;
-
-
-
-    /*! Returns the equivalent thermal conductivity of the material of the
-     *  sink layer
-     *
-     * \param hsink      the pointer to the heat sink
-     * \param chip_area the area of the chip
-     *
-     * \return the equivalent thermal conductivity of the sink layer
-     * \return \c 0 if the model of the heat sink is not correct
-     */
-
-    SolidTC_t get_sink_thermal_conductivity
-    (
-        HeatSink_t      *hsink,
-        CellDimension_t  chip_area
-    ) ;
 
 /******************************************************************************/
 
